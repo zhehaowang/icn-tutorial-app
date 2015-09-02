@@ -16,179 +16,143 @@
   limitations under the License
 -->
 
-
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="description" content="NDN Chat">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NDN Chat</title>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="NDN Chat">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NDN Chat</title>
 
-    <!-- Add to homescreen for Chrome on Android -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <!--
-    <link rel="icon" sizes="192x192" href="images/touch/chrome-touch-icon-192x192.png">
-    -->
-    <!-- Add to homescreen for Safari on iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="NDN Chat">
-    <link rel="apple-touch-icon-precomposed" href="apple-touch-icon-precomposed.png">
+  <!-- Add to homescreen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <!--
+  <link rel="icon" sizes="192x192" href="images/touch/chrome-touch-icon-192x192.png">
+  -->
+  <!-- Add to homescreen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="NDN Chat">
+  <link rel="apple-touch-icon-precomposed" href="apple-touch-icon-precomposed.png">
 
-    <!-- Tile icon for Win8 (144x144 + tile color) -->
-    <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
-    <meta name="msapplication-TileColor" content="#3372DF">
+  <!-- Tile icon for Win8 (144x144 + tile color) -->
+  <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
+  <meta name="msapplication-TileColor" content="#3372DF">
 
-    <!-- 
-    -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="css/material.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
 
-    <link href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="css/material.min.css">
-    <link rel="stylesheet" href="css/styles.css">
-    
-    </head>
- 
-    
-    
-    
-    <body>
-    <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
-      <header class="demo-header mdl-layout__header mdl-color--white mdl-color--grey-100 mdl-color-text--grey-600">
-        <div class="mdl-layout__header-row">
-          <span class="mdl-layout-title">#NDN_Goodness</span>
-          <div class="mdl-layout-spacer"></div>
-        
-            <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
-            <label class="mdl-button mdl-js-button mdl-button--icon" for="search">
-             <i class="material-icons">search</i>
-            </label>
-            <div class="mdl-textfield__expandable-holder">
-              <input class="mdl-textfield__input" type="text" id="search" />
-              <label class="mdl-textfield__label" for="search">Enter your query...</label>
-            </div>
-          </div>
-          <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="hdrbtn">
-            <i class="material-icons">more_vert</i>
-          </button>
-          <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
-            <li class="mdl-menu__item">Help</li>
-            <li class="mdl-menu__item">Preferences</li>
-            <li class="mdl-menu__item">Log Out</li>
-          </ul>
-        </div>
-      </header>
+<body>
+<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
+  <header class="demo-header mdl-layout__header mdl-color--white mdl-color--grey-100 mdl-color-text--grey-600">
+	<div class="mdl-layout__header-row">
+	  <span class="mdl-layout-title">#NDN_Goodness</span>
+	  <div class="mdl-layout-spacer"></div>
+	  
+	  <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
+		<label class="mdl-button mdl-js-button mdl-button--icon" for="search">
+		  <i class="material-icons">search</i>
+		</label>
+		<div class="mdl-textfield__expandable-holder">
+		  <input class="mdl-textfield__input" type="text" id="search" />
+		  <label class="mdl-textfield__label" for="search">Enter your query...</label>
+		</div>
+	  </div>
+	  <button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon" id="hdrbtn">
+		<i class="material-icons">more_vert</i>
+	  </button>
+	  <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
+		<li class="mdl-menu__item">Help</li>
+		<li class="mdl-menu__item">Preferences</li>
+		<li class="mdl-menu__item">Log Out</li>
+	  </ul>
+	</div>
+  </header>
 
-        
-        <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
-    
-        <header class="demo-drawer-header">
-    
-            
-         <h5>UCLA/REMAP</h5>
-            
-          <div class="demo-avatar-dropdown">
-            <div class="mdl-layout-spacer"></div>
-            <button id="accbtn" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
-              <i class="material-icons" role="presentation">arrow_drop_down</i>
-              <span class="visuallyhidden">Accounts</span>
-            </button>
-            <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="accbtn">
-              <li class="mdl-menu__item">hello@example.com</li>
-              <li class="mdl-menu__item">info@example.com</li>
-              <li class="mdl-menu__item"><i class="material-icons">add</i>Add another account...</li>
-            </ul>
-          </div>
-        
-            </header>
-        
-        <nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
-          
-        <h6 class="mdl-navigation__link title" id = "chan-title">CHANNELS</h6>    
-       
-            
-          <a class="mdl-navigation__link selected" href="">#NDN_Goodness</a>
-          <a class="mdl-navigation__link" href="">#General</a>
-          <a class="mdl-navigation__link" href="">#Random</a>
-          <a class="mdl-navigation__link" href="">#Cats</a>
-          <a class="mdl-navigation__link" href="">#good_questions</a>
-          
-         <div class="mdl-layout-spacer"></div>
-            
-          <h6 class="mdl-navigation__link title" id = "dir-title">DIRECT MESSAGING</h6>
-          
-          <a class="mdl-navigation__link" href="">@Jburke</a>
-          <a class="mdl-navigation__link" href="">@Fabian</a>
-          <a class="mdl-navigation__link" href="">@Zoe</a>
-          <a class="mdl-navigation__link" href="">@Peter</a>
-          <a class="mdl-navigation__link" href="">@Taylor</a>
-          
-          <div class="mdl-layout-spacer"></div>
-          
-        
-            </nav>
-      </div>
+  <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
+    <header class="demo-drawer-header">
+	  <h5>UCLA/REMAP</h5>
 
- 
-        
+	  <div class="demo-avatar-dropdown">
+		<div class="mdl-layout-spacer"></div>
+		<button id="accbtn" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+		  <i class="material-icons" role="presentation">arrow_drop_down</i>
+		  <span class="visuallyhidden">Accounts</span>
+		</button>
+		<ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="accbtn">
+		  <li class="mdl-menu__item">hello@example.com</li>
+		  <li class="mdl-menu__item">info@example.com</li>
+		  <li class="mdl-menu__item"><i class="material-icons">add</i>Add another account...</li>
+		</ul>
+	  </div>
+	</header>
+
+	<nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
+
+	  <h6 class="mdl-navigation__link title" id = "chan-title">CHANNELS</h6>    
+
+	  <a class="mdl-navigation__link selected" href="">#NDN_Goodness</a>
+	  <a class="mdl-navigation__link" href="">#General</a>
+	  <a class="mdl-navigation__link" href="">#Random</a>
+	  <a class="mdl-navigation__link" href="">#Cats</a>
+	  <a class="mdl-navigation__link" href="">#good_questions</a>
+
+	  <div class="mdl-layout-spacer"></div>
+
+	  <h6 class="mdl-navigation__link title" id = "dir-title">DIRECT MESSAGING</h6>
+
+	  <a class="mdl-navigation__link" href="">@Jburke</a>
+	  <a class="mdl-navigation__link" href="">@Fabian</a>
+	  <a class="mdl-navigation__link" href="">@Zoe</a>
+	  <a class="mdl-navigation__link" href="">@Peter</a>
+	  <a class="mdl-navigation__link" href="">@Taylor</a>
+
+	  <div class="mdl-layout-spacer"></div>
+	</nav>
+  </div>
+
   <!-- feed of messaging -->
-        
-        <main class="mdl-layout__content">
-           <div class = "comment">     
-        
-    <p><span>RandyMan</span><br> In the morning before dressing, light incense and meditate.</p>
-
-    <p><span>JBurke</span><br> Retire at a regular hour. Partake of food at regular intervals. Eat with moderation and never to the point of satisfaction.</p>
-       
-    <p><span>RandyMan</span><br> Receive a guest with the same attitude you have when alone. When alone, maintain the same attitude you have in receiving guests.</p>
-   
-    <p><span>JBurke</span><br> Watch what you say, and whatever you say, practice it.</p>             
-               
-    <p><span>RandyMan</span><br> When an opportunity comes do not let it pass by, yet always think twice before acting.</p>
-       
-    <p><span>JBurke</span><br> Do not regret the past. Look to the future. Have the fearless attitude of a hero and the loving heart of a child.</p>
-       
-            </div>        
-      </main>
-    </div>
- 
-        
-        
-        
-        
+  <main class="mdl-layout__content">
+	<div class="comment">     
+	  <p><span>RandyMan</span><br> In the morning before dressing, light incense and meditate.</p>
+	  <p><span>JBurke</span><br> Retire at a regular hour. Partake of food at regular intervals. Eat with moderation and never to the point of satisfaction.</p>
+	  <p><span>RandyMan</span><br> Receive a guest with the same attitude you have when alone. When alone, maintain the same attitude you have in receiving guests.</p>
+	  <p><span>JBurke</span><br> Watch what you say, and whatever you say, practice it.</p>             
+	  <p><span>RandyMan</span><br> When an opportunity comes do not let it pass by, yet always think twice before acting.</p>
+	  <p><span>JBurke</span><br> Do not regret the past. Look to the future. Have the fearless attitude of a hero and the loving heart of a child.</p>
+	</div>        
+  </main>
+</div>
 
 <!-- Section for user to enter message -->        
 <div id = "enter-message">   
-        
- <form action="#">
-  <div class="mdl-textfield mdl-js-textfield " id = "saysomethinggood">
-    <input class="mdl-textfield__input" type="text" id="sample1" />
-    <label class="mdl-textfield__label" for="sample1">Text...</label>
-  </div>
-</form>
+  <form action="#">
+	<div class="mdl-textfield mdl-js-textfield " id = "saysomethinggood">
+	  <input class="mdl-textfield__input" type="text" id="sample1" />
+	  <label class="mdl-textfield__label" for="sample1">Text...</label>
+	</div>
+  </form>
 
- <!-- upload photo button -->
-<button class="mdl-button mdl-js-button mdl-button--icon">
-  <i class="material-icons">attach_file</i>
-</button>      
-    
-        
-<!-- Emoticon button -->
-<button class="mdl-button mdl-js-button mdl-button--icon">
-  <i class="material-icons">mood</i>
-</button>        
-        
- <!-- Submit -->       
-<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
-  Submit
-</button>      
-        
-</div> 
-    
+  <!-- upload photo button -->
+  <button class="mdl-button mdl-js-button mdl-button--icon">
+	<i class="material-icons">attach_file</i>
+  </button>
 
-        
-    <script src="js/material.min.js"></script>
-    <script src="js/ndn.js"></script>
-  </body>
+  <!-- Emoticon button -->
+  <button class="mdl-button mdl-js-button mdl-button--icon">
+	<i class="material-icons">mood</i>
+  </button>
+
+  <!-- Submit -->       
+  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+	Submit
+  </button>
+</div>
+
+<script src="js/material.min.js"></script>
+<script src="js/ndn.js"></script>
+</body>
 </html>
