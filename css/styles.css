@@ -1,0 +1,277 @@
+/**
+ * Copyright 2015 Google Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+html, body {
+  font-family: 'Roboto', 'Helvetica', sans-serif;
+}
+.demo-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+}
+.demo-layout .demo-header .mdl-textfield {
+  padding-top: 27px;
+}
+.demo-layout .mdl-layout__header .mdl-layout__drawer-button {
+  color: rgba(0, 0, 0, 0.54);
+}
+.mdl-layout__drawer .avatar {
+  margin-bottom: 16px;
+}
+.demo-drawer {
+  border: none;
+}
+/* iOS Safari specific workaround */
+.demo-drawer .mdl-menu__container {
+  z-index: -1;
+}
+.demo-drawer .demo-navigation {
+  z-index: -2;
+}
+/* END iOS Safari specific workaround */
+.demo-drawer .mdl-menu .mdl-menu__item {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+.demo-drawer-header {
+  box-sizing: border-box;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-pack: end;
+  -webkit-justify-content: flex-end;
+      -ms-flex-pack: end;
+          justify-content: flex-end;
+  padding: 16px 16px 25px 20px;
+  height: 65px;
+}
+.demo-avatar-dropdown {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  position: relative;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: row;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
+  width: 100%;
+}
+
+.demo-navigation {
+  -webkit-box-flex: 1;
+  -webkit-flex-grow: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+}
+.demo-layout .demo-navigation .mdl-navigation__link {
+  display: -webkit-box !important;
+  display: -webkit-flex !important;
+  display: -ms-flexbox !important;
+  display: flex !important;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: row;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+      -ms-flex-align: center;
+          align-items: center;
+  color: white;
+  font-weight: 300;
+  padding: 10px 10px 10px 20px;
+}
+.demo-layout .demo-navigation .mdl-navigation__link:hover {
+  background-color: #EB1B8B;    
+  color: #37474F;  
+}
+.demo-navigation .mdl-navigation__link .material-icons {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.56);
+  margin-right: 32px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+commenting and feed of comments
+ */
+
+
+
+
+
+#saysomethinggood {
+ width:80%;       
+}
+
+
+
+#enter-message {
+      position: fixed;
+      width: 90%;
+      display: block;
+      left: 280px;
+      bottom: 0px;
+      padding-bottom: 40px;
+      z-index: 900;
+      background: white;
+    }
+      
+        
+.comment {
+    position: relative;
+    left: 30px;
+    width: 100%;
+    height: auto; 
+    margin: 5px;
+    padding: 0px;
+    background: white; 
+        }
+   
+.comment p {
+    padding: 15px 10px 15px 10px; 
+    border-bottom:1px dotted  #e9e9e9;
+    width: 90%;
+    font-weight: 300;
+}
+
+.comment p span {
+    font-weight: 600; 
+}
+
+
+
+
+
+
+   
+@media screen and (max-width: 1030px) {
+ 
+#saysomethinggood {
+ width:90%;    
+}
+    
+    
+#enter-message {
+      position: fixed;
+      width: 100%;
+      display: block;
+      left: 20px;
+      bottom: 0px;
+      padding-bottom: 40px;
+      z-index: 900;
+    }    
+    
+
+.comment {
+    position: relative;
+    left: 10px;
+    width: 100%;
+    height: auto; 
+    margin: 5px;
+    padding: 10px;
+    margin-bottom: 150px;
+    background: white; 
+        }
+
+
+
+
+}
+
+
+
+.demo-drawer {
+   z-index: 999;   
+}
+
+.mdl-layout__obfuscator {
+      z-index: 990; 
+}
+
+
+
+
+
+/**
+menu and header
+ */
+
+
+
+
+#dir-title {
+  font-size: 15px;    
+  text-decoration: underline;    
+  font-weight: 300; 
+}
+
+
+#chan-title {
+  font-size: 15px;
+ text-decoration: underline;
+ font-weight: 300;   
+}
+
+#chan-title:hover {
+ background-color:#37474F;
+ color: white;
+}
+
+#dir-title:hover {
+ background-color:#37474F;
+ color: white;
+}
+
+
+.selected {
+  background-color:#00BCD4;
+  font-weight: 300; 
+}
+
+
+
+.selected:hover {
+  background-color:#00BCD4;
+}
