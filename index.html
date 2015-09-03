@@ -116,13 +116,8 @@
 
   <!-- feed of messaging -->
   <main class="mdl-layout__content">
-	<div class="comment">     
+	<div id="chatDislpayDiv" class="comment">     
 	  <p><span>RandyMan</span><br> In the morning before dressing, light incense and meditate.</p>
-	  <p><span>JBurke</span><br> Retire at a regular hour. Partake of food at regular intervals. Eat with moderation and never to the point of satisfaction.</p>
-	  <p><span>RandyMan</span><br> Receive a guest with the same attitude you have when alone. When alone, maintain the same attitude you have in receiving guests.</p>
-	  <p><span>JBurke</span><br> Watch what you say, and whatever you say, practice it.</p>             
-	  <p><span>RandyMan</span><br> When an opportunity comes do not let it pass by, yet always think twice before acting.</p>
-	  <p><span>JBurke</span><br> Do not regret the past. Look to the future. Have the fearless attitude of a hero and the loving heart of a child.</p>
 	</div>        
   </main>
 </div>
@@ -130,8 +125,8 @@
 <!-- Section for user to enter message -->        
 <div id = "enter-message">   
   <form action="#">
-	<div class="mdl-textfield mdl-js-textfield " id = "saysomethinggood">
-	  <input class="mdl-textfield__input" type="text" id="sample1" />
+	<div class="mdl-textfield mdl-js-textfield " id="saysomethinggood">
+	  <input class="mdl-textfield__input" type="text" id="chatTextInput" />
 	  <label class="mdl-textfield__label" for="sample1">Text...</label>
 	</div>
   </form>
@@ -146,13 +141,22 @@
 	<i class="material-icons">mood</i>
   </button>
 
-  <!-- Submit -->       
-  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+  <!-- Submit -->
+  <button id="chatBtn" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
 	Submit
   </button>
 </div>
 
 <script src="js/material.min.js"></script>
-<script src="js/ndn.js"></script>
+<script src="js/jquery-1.11.3.min.js"></script>
+
+<script src="js/protobuf/long.min.js"></script>
+<script src="js/protobuf/bytebuffer-ab.min.js"></script>
+<script src="js/protobuf/protobuf.min.js"></script>
+
+<script src="js/ndn.min.js"></script>
+
+<script src="js/chrono-chat.js"></script>
+<script src="js/page.js"></script>
 </body>
 </html>
