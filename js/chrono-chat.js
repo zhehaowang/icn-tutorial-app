@@ -112,8 +112,12 @@ ChronoChat.prototype.initial = function()
     this.roster[this.username] = screenName;
 
     var time = (new Date()).toLocaleTimeString();
-    this.onUserJoin(this.screenName, time, "");
-    this.updateRoster(this.roster);
+    if (this.onUserJoin !== undefined) {
+      this.onUserJoin(this.screenName, time, "");
+    }
+    if (this.updateRoster !== undefined) {
+      this.updateRoster(this.roster);
+    }
 
     this.messageCacheAppend('JOIN', 'xxx');
   }
@@ -219,9 +223,13 @@ ChronoChat.prototype.onData = function(interest, data)
     */
     
     if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
-      this.onUserJoin(content.fromScreenName, time, "");
+      if (this.onUserJoin !== undefined) {
+        this.onUserJoin(content.fromScreenName, time, "");
+      }
       this.roster[content.fromUsername] = content.fromScreenName;
-      this.updateRoster(this.roster);
+      if (this.updateRoster !== undefined) {
+        this.updateRoster(this.roster);
+      }
     }
 
     var timeout = new Interest(new Name("/timeout"));
@@ -236,12 +244,16 @@ ChronoChat.prototype.onData = function(interest, data)
       // Encode special html characters to avoid script injection.
 
       var escaped_msg = $('<div/>').text(content.data).html();
-      this.onChatData(content.fromScreenName, time, escaped_msg);
+      if (this.onChatData !== undefined) {
+        this.onChatData(content.fromScreenName, time, escaped_msg);
+      }
     } else if (content.msgType == "LEAVE") {
       //leave message
       if (content.fromUsername in this.roster && content.fromUsername != this.username) {
         delete this.roster[content.fromUsername];
-        this.onUserLeave(content.fromScreenName, time, content.data);
+        if (this.onUserLeave !== undefined) {
+          this.onUserLeave(content.fromScreenName, time, content.data);
+        }
       }
     }
   }
@@ -297,8 +309,12 @@ ChronoChat.prototype.alive = function(interest, temp_seq, name, session, prefix)
       delete this.roster[name + session];
 
       var time = (new Date()).toLocaleTimeString();
-      this.onUserLeave(name, time, "");
-      this.updateRoster(this.roster);
+      if (this.onUserLeave !== undefined) {
+        this.onUserLeave(name, time, "");
+      }
+      if (this.updateRoster !== undefined) {
+        this.updateRoster(this.roster);
+      }
     }
   }
 };
