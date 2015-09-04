@@ -126,7 +126,7 @@ $(document).ready(function(){
   face.setCommandSigningInfo(keyChain, certificateName);
   
   chronoChat = new ChronoChat
-    (screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin);
+    (screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster);
 
   $("#chatBtn").click(function () {
     sendMessageClick();
@@ -159,21 +159,30 @@ function sendMessageClick() {
  * @param msg
  */
 function onUserLeave(from, time, msg) {
-  var objDiv = document.getElementById("chatDislpayDiv");
+  var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Leave</p>';
   objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function onChatData(from, time, msg) {
-  var objDiv = document.getElementById("chatDislpayDiv");
+  var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span><br>' + msg + '</p>';
   objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function onUserJoin(from, time, msg) {
-  var objDiv = document.getElementById("chatDislpayDiv");
+  var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Join</p>';
   objDiv.scrollTop = objDiv.scrollHeight;
+}
+
+function updateRoster(roster) {
+  var objDiv = document.getElementById("rosterDisplayDiv");
+  objDiv.innerHTML = "";
+  for (var name in roster) {
+    objDiv.innerHTML += '<li>' + roster[name] + '</li>';
+  }
+  objDiv.innerHTML += '</ul>';
 }
 
 // Enable sending the message by pressing 'Enter'.

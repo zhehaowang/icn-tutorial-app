@@ -18,7 +18,7 @@
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
 
-var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin)
+var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster)
 {
   this.screenName = screenName;
   this.chatroom = chatroom;
@@ -30,7 +30,7 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
   this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom)
     .append(this.getRandomString());
 
-  this.roster = [];
+  this.roster = {};
   this.msgCache = [];
   
   this.maxmsgCacheLength = 100;
@@ -47,8 +47,7 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
 
   if (this.screenName == "" || this.chatroom == "") {
     console.log("input username and chatroom");
-  }
-  else {
+  } else {
     this.sync = new ChronoSync2013
       (this.sendInterest.bind(this), this.initial.bind(this), this.chatPrefix,
        (new Name("/ndn/broadcast/ChronoChat-0.3")).append(this.chatroom), session,
@@ -63,6 +62,7 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
   this.onChatData = onChatData;
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
+  this.updateRoster = updateRoster;
 };
 
 /**
@@ -89,8 +89,7 @@ ChronoChat.prototype.onInterest = function
       this.keyChain.sign(data, this.certificateName);
       try {
         face.putData(data);
-      }
-      catch (e) {
+      } catch (e) {
         console.log(e.toString());
       }
       break;
@@ -109,16 +108,12 @@ ChronoChat.prototype.initial = function()
 
   this.face.expressInterest(timeout, this.dummyOnData, this.heartbeat.bind(this));
 
-  if (this.roster.indexOf(this.username) == -1) {
-    this.roster.push(this.username);
+  if (!this.roster.hasOwnProperty(this.username)) {
+    this.roster[this.username] = screenName;
 
-/*
-    document.getElementById('menu').innerHTML = '<p><b>Member</b></p>';
-    document.getElementById('menu').innerHTML += '<ul><li>' + this.screenName +
-      '</li></ul>';
-*/
     var time = (new Date()).toLocaleTimeString();
     this.onUserJoin(this.screenName, time, "");
+    this.updateRoster(this.roster);
 
     this.messageCacheAppend('JOIN', 'xxx');
   }
@@ -162,8 +157,7 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
       if (index != -1) {
         sessionNoList[index] = sessionNo;
         sequenceNoList[index] = syncState.getSequenceNo();
-      }
-      else {
+      } else {
         sendList.push(syncState.getDataPrefix());
         sessionNoList.push(sessionNo);
         sequenceNoList.push(syncState.getSequenceNo());
@@ -193,42 +187,43 @@ ChronoChat.prototype.onData = function(interest, data)
   var temp = (new Date()).getTime();
   if (temp - content.timestamp * 1000 < 120000) {
     var time = (new Date(content.timestamp * 1000)).toLocaleTimeString();
-    var name = content.from;
 
     // chatPrefix should be saved as a name, not a URI string.
     var prefix = data.getName().getPrefix(-2).toUri();
 
     var session = parseInt((data.getName().get(-2)).toEscapedString());
     var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-    var l = 0;
 
-    //update roster
-    while (l < this.roster.length) {
+    // TODO: temporarily disabled update roster for a potential new user session; double check this decision about user joining
+    // What if two different users have the same "name", but not the "name + timestamp"?
+    /*
+    for (l in this.roster) {
       var name_t = this.roster[l].substring(0,this.roster[l].length-10);
       var session_t = this.roster[l].substring(this.roster[l].length-10,this.roster[l].length);
-      if (name != name_t && content.msgType != "LEAVE")
+      if (name != name_t && content.msgType != "LEAVE") {
         l++;
-      else{
-        if(name == name_t && session > session_t){
+      } else {
+        if (name == name_t && session > session_t) {
           this.roster[l] = name + session;
         }
         break;
       }
     }
 
-    if(l == this.roster.length) {
+    if (l == this.roster.length) {
       this.roster.push(name + session);
+      // TODO: merge updateRoster call with Join/Chat/Leave call at some point
       this.onUserJoin(name, time, "");
-
-      /*
-      document.getElementById('menu').innerHTML = '<p><b>Member</b></p><ul>';
-      for (var i = 0; i < this.roster.length ; i++) {
-        var name_t = this.roster[i].substring(0,this.roster[i].length - 10);
-        document.getElementById('menu').innerHTML += '<li>' + name_t + '</li>';
-      }
-      document.getElementById('menu').innerHTML += '</ul>';
-      */
+      this.updateRoster(this.roster);
     }
+    */
+    
+    if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
+      this.onUserJoin(content.fromScreenName, time, "");
+      this.roster[content.fromUsername] = content.fromScreenName;
+      this.updateRoster(this.roster);
+    }
+
     var timeout = new Interest(new Name("/timeout"));
     timeout.setInterestLifetimeMilliseconds(120000);
     this.face.expressInterest(timeout, this.dummyOnData, this.alive.bind(this, timeout, seqNo, name, session, prefix));
@@ -236,19 +231,17 @@ ChronoChat.prototype.onData = function(interest, data)
     //if (content.msgType == 0 && this.isRecoverySyncState == false && content.from != this.screenName){
       // Note: the original logic does not display old data;
       // But what if an ordinary application data interest gets answered after entering recovery state?
-    if (content.msgType == "CHAT" && content.from != this.screenName){
+    if (content.msgType == "CHAT" && content.fromUsername != this.username){
       // Display on the screen will not display old data.
       // Encode special html characters to avoid script injection.
 
       var escaped_msg = $('<div/>').text(content.data).html();
-
-      this.onChatData(name, time, escaped_msg);
+      this.onChatData(content.fromScreenName, time, escaped_msg);
     } else if (content.msgType == "LEAVE") {
       //leave message
-      var n = this.roster.indexOf(name + session);
-      if(n != -1 && name != this.screenName) {
-        this.roster.splice(n,1);
-        this.onUserLeave(name, time, content.data);
+      if (content.fromUsername in this.roster && content.fromUsername != this.username) {
+        delete this.roster[content.fromUsername];
+        this.onUserLeave(content.fromScreenName, time, content.data);
       }
     }
   }
@@ -297,25 +290,15 @@ ChronoChat.prototype.alive = function(interest, temp_seq, name, session, prefix)
 {
   //console.log("check alive");
   var index_n = this.sync.digest_tree.find(prefix, session);
-  var n = this.roster.indexOf(name + session);
 
-  if (index_n != -1 && n != -1) {
+  if (index_n != -1 && (name + session) in this.roster) {
     var seq = this.sync.digest_tree.digestnode[index_n].seqNo_seq;
     if (temp_seq == seq) {
-      this.roster.splice(n,1);
-      console.log(name+" leave");
-      var date = new Date();
-      var time = date.toLocaleTimeString();
+      delete this.roster[name + session];
 
+      var time = (new Date()).toLocaleTimeString();
       this.onUserLeave(name, time, "");
-/*
-      document.getElementById('menu').innerHTML = '<p><b>Member</b></p><ul>';
-      for (var i = 0; i < this.roster.length; i++) {
-        var name_t = this.roster[i].substring(0, this.roster[i].length - 10);
-        document.getElementById('menu').innerHTML += '<li>' + name_t + '</li>';
-      }
-      document.getElementById('menu').innerHTML += '</ul>';
-*/
+      this.updateRoster(this.roster);
     }
   }
 };
@@ -325,7 +308,7 @@ ChronoChat.prototype.sendMessage = function(chatMsg)
   // NOTE: check if this check should be here
   if (this.msgCache.length == 0)
     this.messageCacheAppend("JOIN", "xxx");
-      
+  
   this.sync.publishNextSequenceNo();
   this.messageCacheAppend("CHAT", chatMsg);
 }
@@ -347,10 +330,9 @@ ChronoChat.prototype.leave = function()
  */
 ChronoChat.prototype.messageCacheAppend = function(messageType, message)
 {
-  var date = new Date();
-  var time = date.getTime();
+  var time = (new Date()).getTime();
 
-  this.msgCache.push(new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.screenName, messageType, message, time));
+  this.msgCache.push(new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time));
   while (this.msgCache.length > this.maxmsgCacheLength) {
     this.msgCache.shift();
   }
@@ -367,14 +349,15 @@ ChronoChat.prototype.getRandomString = function()
   return result;
 };
 
-ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, from, msgType, msg, timestamp)
+ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, fromUsername, fromScreenName, msgType, msg, timestamp)
 {
   if (typeof seqNoOrChatMessageOrEncoding === 'object' && seqNoOrChatMessageOrEncoding instanceof ChronoChat.ChatMessage) {
     // Copy constructor
     var chatMessage = seqNoOrChatMessageOrEncoding;
 
     this.seqNo = chatMessage.seqNo;
-    this.from = chatMessage.from;
+    this.fromUsername = chatMessage.fromUsername;
+    this.fromScreenName = chatMessage.fromScreenName;
     this.msgType = chatMessage.msgType;
     this.timestamp = chatMessage.timestamp;
     this.data = chatMessage.data;
@@ -386,7 +369,8 @@ ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, from, msgType, m
     var encoding = ChronoChat.ChatMessage.decode(seqNoOrChatMessageOrEncoding);
     
     this.seqNo = encoding.seqNo;
-    this.from = encoding.from;
+    this.fromUsername = encoding.fromUsername;
+    this.fromScreenName = encoding.fromScreenName;
     this.msgType = encoding.msgType;
     this.timestamp = encoding.timestamp;
     this.data = encoding.data;
@@ -397,7 +381,8 @@ ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, from, msgType, m
     var seqNo = seqNoOrChatMessageOrEncoding;
 
     this.seqNo = seqNo;
-    this.from = from;
+    this.fromUsername = fromUsername;
+    this.fromScreenName = fromScreenName;
     this.msgType = msgType;
     this.timestamp = timestamp;
     this.data = msg;
