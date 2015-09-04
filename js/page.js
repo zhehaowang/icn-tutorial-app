@@ -126,11 +126,13 @@ $(document).ready(function(){
   face.setCommandSigningInfo(keyChain, certificateName);
   
   chronoChat = new ChronoChat
-    (screenName, chatroom, hubPrefix, face, keyChain, certificateName);
+    (screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin);
 
   $("#chatBtn").click(function () {
-    sendMessageClick()
+    sendMessageClick();
   });
+
+  $("#chatTextInput").keyup(checkKey);
 });
 
 function sendMessageClick() {
@@ -142,10 +144,7 @@ function sendMessageClick() {
     // Encode special html characters to avoid script injection.
     var escaped_msg = $('<div/>').text(chatMsg).html();
 
-    document.getElementById('chatDislpayDiv').innerHTML += '<p><grey>' + screenName +
-      '-' + time + ':</grey><br />' + escaped_msg + '</p>';
-    var objDiv = document.getElementById("chatDislpayDiv");
-    objDiv.scrollTop = objDiv.scrollHeight;
+    onChatData(screenName, time, escaped_msg);
 
     chronoChat.sendMessage(escaped_msg);
     $("#chatTextInput").val("");
@@ -154,8 +153,32 @@ function sendMessageClick() {
     alert("Message cannot be empty");
 }
 
+/**
+ * @param name
+ * @param time
+ * @param msg
+ */
+function onUserLeave(from, time, msg) {
+  var objDiv = document.getElementById("chatDislpayDiv");
+  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Leave</p>';
+  objDiv.scrollTop = objDiv.scrollHeight;
+}
+
+function onChatData(from, time, msg) {
+  var objDiv = document.getElementById("chatDislpayDiv");
+  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span><br>' + msg + '</p>';
+  objDiv.scrollTop = objDiv.scrollHeight;
+}
+
+function onUserJoin(from, time, msg) {
+  var objDiv = document.getElementById("chatDislpayDiv");
+  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Join</p>';
+  objDiv.scrollTop = objDiv.scrollHeight;
+}
+
 // Enable sending the message by pressing 'Enter'.
 function checkKey(event) {
-  if (event.keyCode == 13)
+  if (event.keyCode == 13) {
     sendMessageClick();
+  }
 }

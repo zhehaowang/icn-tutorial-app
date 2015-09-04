@@ -18,7 +18,7 @@
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
 
-var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData)
+var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin)
 {
   this.screenName = screenName;
   this.chatroom = chatroom;
@@ -61,6 +61,8 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
 
   // UI callbacks
   this.onChatData = onChatData;
+  this.onUserLeave = onUserLeave;
+  this.onUserJoin = onUserJoin;
 };
 
 /**
@@ -115,12 +117,8 @@ ChronoChat.prototype.initial = function()
     document.getElementById('menu').innerHTML += '<ul><li>' + this.screenName +
       '</li></ul>';
 */
-    var date = new Date();
-    document.getElementById('chatDislpayDiv').innerHTML += '<div><b><grey>' + 
-      this.screenName + '-' + date.toLocaleTimeString() +
-      ': Join</grey></b><br /></div>'
-    var objDiv = document.getElementById("chatDislpayDiv");
-    objDiv.scrollTop = objDiv.scrollHeight;
+    var time = (new Date()).toLocaleTimeString();
+    this.onUserJoin(this.screenName, time, "");
 
     this.messageCacheAppend('JOIN', 'xxx');
   }
@@ -191,7 +189,6 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
 ChronoChat.prototype.onData = function(interest, data)
 {
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
-  console.log(content);
 
   var temp = (new Date()).getTime();
   if (temp - content.timestamp * 1000 < 120000) {
@@ -221,11 +218,7 @@ ChronoChat.prototype.onData = function(interest, data)
 
     if(l == this.roster.length) {
       this.roster.push(name + session);
-
-      document.getElementById('chatDislpayDiv').innerHTML += '<div><b><grey>' + name + '-' +
-        time + ': Join' + '</grey></b><br /></div>';
-      var objDiv = document.getElementById("chatDislpayDiv");
-      objDiv.scrollTop = objDiv.scrollHeight;
+      this.onUserJoin(name, time, "");
 
       /*
       document.getElementById('menu').innerHTML = '<p><b>Member</b></p><ul>';
@@ -248,31 +241,14 @@ ChronoChat.prototype.onData = function(interest, data)
       // Encode special html characters to avoid script injection.
 
       var escaped_msg = $('<div/>').text(content.data).html();
-      document.getElementById("chatDislpayDiv").innerHTML +='<p><grey>' + content.from + '-' +
-        time + ':</grey><br />' + escaped_msg + '</p>';
-      var objDiv = document.getElementById("chatDislpayDiv");
-      objDiv.scrollTop = objDiv.scrollHeight;
+
+      this.onChatData(name, time, escaped_msg);
     } else if (content.msgType == "LEAVE") {
       //leave message
       var n = this.roster.indexOf(name + session);
       if(n != -1 && name != this.screenName) {
         this.roster.splice(n,1);
-        /*
-        document.getElementById('menu').innerHTML = '<p><b>Member</b></p><ul>';
-        for(var i = 0; i<this.roster.length; i++) {
-          var name_t = this.roster[i].substring(0,this.roster[i].length - 10);
-          document.getElementById('menu').innerHTML += '<li>' + name_t + '</li>';
-        }
-
-        document.getElementById('menu').innerHTML += '</ul>';
-        */
-        var date = new Date(content.timestamp * 1000);
-        var time = date.toLocaleTimeString();
-
-        document.getElementById('chatDislpayDiv').innerHTML += '<div><b><grey>' + name +
-          '-' + time + ': Leave</grey></b><br /></div>';
-        var objDiv = document.getElementById("chatDislpayDiv");
-        objDiv.scrollTop = objDiv.scrollHeight;
+        this.onUserLeave(name, time, content.data);
       }
     }
   }
@@ -331,10 +307,7 @@ ChronoChat.prototype.alive = function(interest, temp_seq, name, session, prefix)
       var date = new Date();
       var time = date.toLocaleTimeString();
 
-      document.getElementById('chatDislpayDiv').innerHTML += '<div><b><grey>' + name + '-' +
-        t + ': Leave</grey></b><br /></div>';
-      var objDiv = document.getElementById("chatDislpayDiv");
-      objDiv.scrollTop = objDiv.scrollHeight;
+      this.onUserLeave(name, time, "");
 /*
       document.getElementById('menu').innerHTML = '<p><b>Member</b></p><ul>';
       for (var i = 0; i < this.roster.length; i++) {
