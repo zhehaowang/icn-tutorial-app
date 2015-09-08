@@ -104,7 +104,7 @@ $(document).ready(function(){
   screenName = getRandomNameString();
   var hubPrefix = "/ndn/edu/ucla/remap";
   var chatroom = "test";
-  var hostName = "memoria.ndn.ucla.edu";
+  var hostName = "localhost";
 
   if (screenName == "" || chatroom == "") {
     alert("input username and chatroom");
@@ -126,7 +126,7 @@ $(document).ready(function(){
   face.setCommandSigningInfo(keyChain, certificateName);
   
   chronoChat = new ChronoChat
-    (screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster);
+    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster);
 
   $("#chatBtn").click(function () {
     sendMessageClick();
@@ -146,7 +146,7 @@ function sendMessageClick() {
 
     onChatData(screenName, time, escaped_msg);
 
-    chronoChat.sendMessage(escaped_msg);
+    chronoChat.send(escaped_msg);
     $("#chatTextInput").val("");
   }
   else

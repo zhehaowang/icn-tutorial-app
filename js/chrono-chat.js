@@ -18,7 +18,8 @@
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
 
-var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster)
+// NOTE: constructor now takes the actual username as a parameter
+var ChronoChat = function(screenName, username, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster)
 {
   this.screenName = screenName;
   this.chatroom = chatroom;
@@ -26,25 +27,34 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
   this.face = face;
   this.keyChain = keyChain;
   this.certificateName = certificateName;
-
-  this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom)
-    .append(this.getRandomString());
+  
+  if (username === undefined) {
+    this.username = this.getRandomString();
+  } else {
+    this.username = username;
+  }
+  this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom).append(this.username);
+  console.log("My chat prefix: " + this.chatPrefix.toUri());
 
   this.roster = {};
   this.msgCache = [];
   
   this.maxmsgCacheLength = 100;
-  this.syncLifetime = 5000.0;
-  this.timeoutInterestLifetime = 60000;
+  this.syncLifetime = 5000;
 
-  //console.log("The local chat prefix " + this.chatPrefix.toUri() + " ***");
+  this.heartbeatInterval = 10000;
+  // NOTE: if the data takes longer than heartbeatInterval to arrive, a leave will be posted; this may not be ideal
+  this.checkAliveWaitPeriod = this.heartbeatInterval * 2;
   
-  // NOTE: remind me the usage of session?
+  this.chatDataLifetime = 10000;
+
+  // TODO: Checkalive mechanism
+  // NOTE: The session number used with the applicationDataPrefix in sync state messages 
   var session = (new Date()).getTime();
   session = parseInt(session/1000);
 
-  this.username = this.screenName + session;
-
+  //this.username = this.screenName + session;
+  
   if (this.screenName == "" || this.chatroom == "") {
     console.log("input username and chatroom");
   } else {
@@ -76,8 +86,6 @@ var ChronoChat = function(screenName, chatroom, hubPrefix, face, keyChain, certi
 ChronoChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  var content = {};
-
   // chatPrefix should really be saved as a name, not a URI string.
   var chatPrefixSize = new Name(this.chatPrefix).size();
   var seq = parseInt(interest.getName().get(chatPrefixSize + 1).toEscapedString());
@@ -85,6 +93,7 @@ ChronoChat.prototype.onInterest = function
     if (this.msgCache[i].seqNo == seq) {
       var data = new Data(interest.getName());
       data.setContent(this.msgCache[i].encode());
+      data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
 
       this.keyChain.sign(data, this.certificateName);
       try {
@@ -99,28 +108,17 @@ ChronoChat.prototype.onInterest = function
 
 ChronoChat.prototype.onRegisterFailed = function(prefix)
 {
+  console.log("Register failed for prefix " + prefix.toUri());
 };
 
 ChronoChat.prototype.initial = function()
 {
-  var timeout = new Interest(new Name("/timeout"));
-  timeout.setInterestLifetimeMilliseconds(this.timeoutInterestLifetime);
-
-  this.face.expressInterest(timeout, this.dummyOnData, this.heartbeat.bind(this));
-
-  if (!this.roster.hasOwnProperty(this.username)) {
-    this.roster[this.username] = screenName;
-
-    var time = (new Date()).toLocaleTimeString();
-    if (this.onUserJoin !== undefined) {
-      this.onUserJoin(this.screenName, time, "");
-    }
-    if (this.updateRoster !== undefined) {
-      this.updateRoster(this.roster);
-    }
-
-    this.messageCacheAppend('JOIN', 'xxx');
-  }
+  var self = this;
+  setTimeout(function () {
+    setInterval(self.heartbeat.bind(self), self.heartbeatInterval);
+  }, self.heartbeatInterval);
+  // Note: alternatively, let user call join, need changes in the library, so that initial interest is not expressed in constructor, but in a "start" function instead
+  this.join();
 };
 
 /**
@@ -149,8 +147,9 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
     var syncState = syncStates[j];
     var nameComponents = new Name(syncState.getDataPrefix());
     var tempName = nameComponents.get(-1).toEscapedString();
+
     var sessionNo = syncState.getSessionNo();
-    if (tempName != this.screenName) {
+    if (tempName != this.username) {
       var index = -1;
       for (var k = 0; k < sendList.length; ++k) {
         if (sendList[k] == syncState.getDataPrefix()) {
@@ -183,77 +182,45 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
  * @param {Data} data
  */
 
-// TODO: find out about the 120000, use UI callback instead of modifying UI here
 ChronoChat.prototype.onData = function(interest, data)
 {
+  console.log("Got data: " + data.getName().toUri());
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
+  
+  console.log(content);
+  var time = (new Date(content.timestamp)).toLocaleTimeString();
 
-  var temp = (new Date()).getTime();
-  if (temp - content.timestamp * 1000 < 120000) {
-    var time = (new Date(content.timestamp * 1000)).toLocaleTimeString();
+  // chatPrefix should be saved as a name, not a URI string.
+  var prefix = data.getName().getPrefix(-2).toUri();
 
-    // chatPrefix should be saved as a name, not a URI string.
-    var prefix = data.getName().getPrefix(-2).toUri();
+  // TODO: This assumes knowledge of how the library would manipulate the name in application code
+  var session = parseInt((data.getName().get(-2)).toEscapedString());
+  var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
+  var name = data.getName().get(-3).toEscapedString()
 
-    var session = parseInt((data.getName().get(-2)).toEscapedString());
-    var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-
-    // TODO: temporarily disabled update roster for a potential new user session; double check this decision about user joining
-    // What if two different users have the same "name", but not the "name + timestamp"?
-    /*
-    for (l in this.roster) {
-      var name_t = this.roster[l].substring(0,this.roster[l].length-10);
-      var session_t = this.roster[l].substring(this.roster[l].length-10,this.roster[l].length);
-      if (name != name_t && content.msgType != "LEAVE") {
-        l++;
-      } else {
-        if (name == name_t && session > session_t) {
-          this.roster[l] = name + session;
-        }
-        break;
-      }
+  if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
+    if (this.onUserJoin !== undefined) {
+      this.onUserJoin(content.fromScreenName, time, "");
     }
-
-    if (l == this.roster.length) {
-      this.roster.push(name + session);
-      // TODO: merge updateRoster call with Join/Chat/Leave call at some point
-      this.onUserJoin(name, time, "");
+    this.roster[content.fromUsername] = content.fromScreenName;
+    if (this.updateRoster !== undefined) {
       this.updateRoster(this.roster);
     }
-    */
-    
-    if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
-      if (this.onUserJoin !== undefined) {
-        this.onUserJoin(content.fromScreenName, time, "");
-      }
-      this.roster[content.fromUsername] = content.fromScreenName;
-      if (this.updateRoster !== undefined) {
-        this.updateRoster(this.roster);
-      }
+  }
+  
+  setTimeout(this.alive.bind(this, seqNo, name, session, prefix), this.checkAliveWaitPeriod);
+
+  if (content.msgType == "CHAT" && content.fromUsername != this.username){
+    var escaped_msg = $('<div/>').text(content.data).html();
+    if (this.onChatData !== undefined) {
+      this.onChatData(content.fromScreenName, time, escaped_msg);
     }
-
-    var timeout = new Interest(new Name("/timeout"));
-    timeout.setInterestLifetimeMilliseconds(120000);
-    this.face.expressInterest(timeout, this.dummyOnData, this.alive.bind(this, timeout, seqNo, name, session, prefix));
-    
-    //if (content.msgType == 0 && this.isRecoverySyncState == false && content.from != this.screenName){
-      // Note: the original logic does not display old data;
-      // But what if an ordinary application data interest gets answered after entering recovery state?
-    if (content.msgType == "CHAT" && content.fromUsername != this.username){
-      // Display on the screen will not display old data.
-      // Encode special html characters to avoid script injection.
-
-      var escaped_msg = $('<div/>').text(content.data).html();
-      if (this.onChatData !== undefined) {
-        this.onChatData(content.fromScreenName, time, escaped_msg);
-      }
-    } else if (content.msgType == "LEAVE") {
-      //leave message
-      if (content.fromUsername in this.roster && content.fromUsername != this.username) {
-        delete this.roster[content.fromUsername];
-        if (this.onUserLeave !== undefined) {
-          this.onUserLeave(content.fromScreenName, time, content.data);
-        }
+  } else if (content.msgType == "LEAVE") {
+    //leave message
+    if (content.fromUsername in this.roster && content.fromUsername != this.username) {
+      delete this.roster[content.fromUsername];
+      if (this.onUserLeave !== undefined) {
+        this.onUserLeave(content.fromScreenName, time, content.data);
       }
     }
   }
@@ -265,77 +232,71 @@ ChronoChat.prototype.onData = function(interest, data)
  */
 ChronoChat.prototype.chatTimeout = function(interest)
 {
-  console.log("Timeout waiting for chat data");
+  console.log("Timeout waiting for chat data: " + interest.getName().toUri());
 };
 
-ChronoChat.prototype.heartbeat = function(interest)
+ChronoChat.prototype.heartbeat = function()
 {
-  // Based on ndn-cpp library approach
-  if (this.msgCache.length == 0) {
-    // Is it possible that this gets executed?
-    this.messageCacheAppend("JOIN", "xxx");
-  }
-  this.sync.publishNextSequenceNo();
-  this.messageCacheAppend("HELLO", "xxx");
-
-  // Making a timeout interest for heartbeat...
-  var timeout = new Interest(new Name("/timeout"));
-  timeout.setInterestLifetimeMilliseconds(this.timeoutInterestLifetime);
-
-  //console.log("*** Chat heartbeat expressed interest with name: " + timeout.getName().toUri() + " ***");
-  this.face.expressInterest(timeout, this.dummyOnData, this.heartbeat.bind(this));
+  this.publishMessage("HELLO", "");
 };
 
-/**
- * This is called after a timeout to check if the user with prefix has a newer sequence
- * number than the given temp_seq. If not, assume the user is idle and remove from the
- * roster and print a leave message.
- * This method has an interest argument because we use it as the onTimeout for
- * Face.expressInterest.
- * @param {Interest}
- * @param {int}
- * @param {string}
- * @param {int}
- * @param {string}
- */
-ChronoChat.prototype.alive = function(interest, temp_seq, name, session, prefix)
+ChronoChat.prototype.alive = function(temp_seq, name, session, prefix)
 {
-  //console.log("check alive");
   var index_n = this.sync.digest_tree.find(prefix, session);
 
-  if (index_n != -1 && (name + session) in this.roster) {
-    var seq = this.sync.digest_tree.digestnode[index_n].seqNo_seq;
+  if (index_n != -1 && name in this.roster) {
+    // NOTE: this assumes knowledge of interior structure of ChronoSync2013 in application code.
+    var seq = this.sync.digest_tree.digestnode[index_n].seqno_seq;
+    
     if (temp_seq == seq) {
-      delete this.roster[name + session];
 
       var time = (new Date()).toLocaleTimeString();
       if (this.onUserLeave !== undefined) {
-        this.onUserLeave(name, time, "");
+        this.onUserLeave(this.roster[name], time, "");
       }
       if (this.updateRoster !== undefined) {
         this.updateRoster(this.roster);
       }
+
+      delete this.roster[name];
     }
   }
 };
 
-ChronoChat.prototype.sendMessage = function(chatMsg)
+ChronoChat.prototype.send = function(msg)
 {
   // NOTE: check if this check should be here
   if (this.msgCache.length == 0)
-    this.messageCacheAppend("JOIN", "xxx");
-  
-  this.sync.publishNextSequenceNo();
-  this.messageCacheAppend("CHAT", chatMsg);
-}
+    this.publishMessage("JOIN", "");
+  this.publishMessage("CHAT", msg);
+};
 
-/**
- * Send the leave message and leave.
- */
+ChronoChat.prototype.join = function()
+{
+  if (!this.roster.hasOwnProperty(this.username)) {
+    this.publishMessage("JOIN", "");
+    this.roster[this.username] = this.screenName;
+    var time = (new Date()).toLocaleTimeString();
+    if (this.onUserJoin !== undefined) {
+      this.onUserJoin(this.screenName, time, "");
+    }
+    if (this.updateRoster !== undefined) {
+      this.updateRoster(this.roster);
+    }
+  } else {
+    console.log("Error: chat roster has this user's username");
+  }
+};
+
 ChronoChat.prototype.leave = function()
 {
-  this.sync.publishNextSequenceNo();
-  this.messageCacheAppend("LEAVE", "xxx");
+  this.publishMessage("LEAVE", "");
+};
+
+ChronoChat.prototype.publishMessage = function(msgType, msg)
+{
+  // Note: publishNextSequenceNo should be called before messageCacheAppend
+  this.messageCacheAppend(msgType, msg);
 };
 
 /**
@@ -347,7 +308,7 @@ ChronoChat.prototype.leave = function()
 ChronoChat.prototype.messageCacheAppend = function(messageType, message)
 {
   var time = (new Date()).getTime();
-
+  this.sync.publishNextSequenceNo();
   this.msgCache.push(new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time));
   while (this.msgCache.length > this.maxmsgCacheLength) {
     this.msgCache.shift();
