@@ -237,7 +237,7 @@ ChronoChat.prototype.chatTimeout = function(interest)
 
 ChronoChat.prototype.heartbeat = function()
 {
-  this.publishMessage("HELLO", "");
+  this.messageCacheAppend("HELLO", "");
 };
 
 ChronoChat.prototype.alive = function(temp_seq, name, session, prefix)
@@ -267,14 +267,14 @@ ChronoChat.prototype.send = function(msg)
 {
   // NOTE: check if this check should be here
   if (this.msgCache.length == 0)
-    this.publishMessage("JOIN", "");
-  this.publishMessage("CHAT", msg);
+    this.messageCacheAppend("JOIN", "");
+  this.messageCacheAppend("CHAT", msg);
 };
 
 ChronoChat.prototype.join = function()
 {
   if (!this.roster.hasOwnProperty(this.username)) {
-    this.publishMessage("JOIN", "");
+    this.messageCacheAppend("JOIN", "");
     this.roster[this.username] = this.screenName;
     var time = (new Date()).toLocaleTimeString();
     if (this.onUserJoin !== undefined) {
@@ -290,13 +290,7 @@ ChronoChat.prototype.join = function()
 
 ChronoChat.prototype.leave = function()
 {
-  this.publishMessage("LEAVE", "");
-};
-
-ChronoChat.prototype.publishMessage = function(msgType, msg)
-{
-  // Note: publishNextSequenceNo should be called before messageCacheAppend
-  this.messageCacheAppend(msgType, msg);
+  this.messageCacheAppend("LEAVE", "");
 };
 
 /**
