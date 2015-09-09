@@ -37,10 +37,13 @@ var ChronoChat = function(screenName, username, chatroom, hubPrefix, face, keyCh
   console.log("My chat prefix: " + this.chatPrefix.toUri());
 
   this.roster = {};
+  this.interestSeqDict = {};
+
   this.msgCache = [];
   
   this.maxmsgCacheLength = 100;
   this.syncLifetime = 5000;
+  this.chatInterestLifetime = 3000;
 
   this.heartbeatInterval = 10000;
   // NOTE: if the data takes longer than heartbeatInterval to arrive, a leave will be posted; this may not be ideal
@@ -139,40 +142,33 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
 {
   this.isRecoverySyncState = isRecovery;
 
-  var sendList = [];       // of String
-  var sessionNoList = [];  // of number
-  var sequenceNoList = []; // of number
+  var sendList = {};
 
   for (var j = 0; j < syncStates.length; j++) {
-    var syncState = syncStates[j];
-    var nameComponents = new Name(syncState.getDataPrefix());
+    var nameComponents = new Name(syncStates[j].getDataPrefix());
     var tempName = nameComponents.get(-1).toEscapedString();
 
-    var sessionNo = syncState.getSessionNo();
     if (tempName != this.username) {
-      var index = -1;
-      for (var k = 0; k < sendList.length; ++k) {
-        if (sendList[k] == syncState.getDataPrefix()) {
-          index = k;
-          break;
-        }
-      }
-      if (index != -1) {
-        sessionNoList[index] = sessionNo;
-        sequenceNoList[index] = syncState.getSequenceNo();
+      if (syncStates[j].getDataPrefix() in sendList) {
+        sendList[syncStates[j].getDataPrefix()].seqNo = syncStates[j].getSequenceNo();
+        sendList[syncStates[j].getDataPrefix()].sessionNo = syncStates[j].getSessionNo();
       } else {
-        sendList.push(syncState.getDataPrefix());
-        sessionNoList.push(sessionNo);
-        sequenceNoList.push(syncState.getSequenceNo());
+        sendList[syncStates[j].getDataPrefix()] = {"seqNo": syncStates[j].getSequenceNo(), "sessionNo": syncStates[j].getSessionNo()};
       }
     }
   }
   
-  for (var i = 0; i < sendList.length; ++i) {
-    var uri = sendList[i] + "/" + sessionNoList[i] + "/" + sequenceNoList[i];
-    var interest = new Interest(new Name(uri));
-    interest.setInterestLifetimeMilliseconds(this.syncLifetime);
-    this.face.expressInterest(interest, this.onData.bind(this), this.chatTimeout.bind(this));
+  for (var dataPrefix in sendList) {
+    var tempName = new Name(dataPrefix).get(-1).toEscapedString();
+    if (!(tempName in this.interestSeqDict) || sendList[dataPrefix].seqNo > this.interestSeqDict[tempName]) {
+      var name = (new Name(dataPrefix)).append(sendList[dataPrefix].sessionNo.toString()).append(sendList[dataPrefix].seqNo.toString());
+      var interest = new Interest(new Name(name));
+      interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
+      this.face.expressInterest(interest, this.onData.bind(this), this.chatTimeout.bind(this));
+      this.interestSeqDict[tempName] = sendList[dataPrefix].seqNo;
+    } else {
+      this.interestSeqDict[tempName] = sendList[dataPrefix].seqNo;
+    }
   }
 };
 
@@ -185,11 +181,10 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
 ChronoChat.prototype.onData = function(interest, data)
 {
   console.log("Got data: " + data.getName().toUri());
+  
+  var time = (new Date()).toLocaleTimeString();
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
   
-  console.log(content);
-  var time = (new Date(content.timestamp)).toLocaleTimeString();
-
   // chatPrefix should be saved as a name, not a URI string.
   var prefix = data.getName().getPrefix(-2).toUri();
 
@@ -199,13 +194,7 @@ ChronoChat.prototype.onData = function(interest, data)
   var name = data.getName().get(-3).toEscapedString()
 
   if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
-    if (this.onUserJoin !== undefined) {
-      this.onUserJoin(content.fromScreenName, time, "");
-    }
-    this.roster[content.fromUsername] = content.fromScreenName;
-    if (this.updateRoster !== undefined) {
-      this.updateRoster(this.roster);
-    }
+    this.userJoin(content.fromUsername, content.fromScreenName);
   }
   
   setTimeout(this.alive.bind(this, seqNo, name, session, prefix), this.checkAliveWaitPeriod);
@@ -216,13 +205,7 @@ ChronoChat.prototype.onData = function(interest, data)
       this.onChatData(content.fromScreenName, time, escaped_msg);
     }
   } else if (content.msgType == "LEAVE") {
-    //leave message
-    if (content.fromUsername in this.roster && content.fromUsername != this.username) {
-      delete this.roster[content.fromUsername];
-      if (this.onUserLeave !== undefined) {
-        this.onUserLeave(content.fromScreenName, time, content.data);
-      }
-    }
+    this.userLeave(content.fromUsername);
   }
 };
 
@@ -249,16 +232,7 @@ ChronoChat.prototype.alive = function(temp_seq, name, session, prefix)
     var seq = this.sync.digest_tree.digestnode[index_n].seqno_seq;
     
     if (temp_seq == seq) {
-
-      var time = (new Date()).toLocaleTimeString();
-      if (this.onUserLeave !== undefined) {
-        this.onUserLeave(this.roster[name], time, "");
-      }
-      if (this.updateRoster !== undefined) {
-        this.updateRoster(this.roster);
-      }
-
-      delete this.roster[name];
+      this.userLeave(name);
     }
   }
 };
@@ -271,26 +245,49 @@ ChronoChat.prototype.send = function(msg)
   this.messageCacheAppend("CHAT", msg);
 };
 
-ChronoChat.prototype.join = function()
+ChronoChat.prototype.userLeave = function(username)
 {
-  if (!this.roster.hasOwnProperty(this.username)) {
-    this.messageCacheAppend("JOIN", "");
-    this.roster[this.username] = this.screenName;
-    var time = (new Date()).toLocaleTimeString();
-    if (this.onUserJoin !== undefined) {
-      this.onUserJoin(this.screenName, time, "");
+  var time = (new Date()).toLocaleTimeString();
+  if (username in this.roster && username != this.username) {
+    if (this.onUserLeave !== undefined) {
+      this.onUserLeave(this.roster[username], time, "");
     }
     if (this.updateRoster !== undefined) {
       this.updateRoster(this.roster);
     }
-  } else {
-    console.log("Error: chat roster has this user's username");
+    delete this.roster[username];
+  }
+  if (username in this.interestSeqDict) {
+    delete this.interestSeqDict[username]; 
+  }
+};
+
+ChronoChat.prototype.userJoin = function(username, screenName)
+{
+  var time = (new Date()).toLocaleTimeString();
+  if (this.onUserJoin !== undefined) {
+    this.onUserJoin(screenName, time, "");
+  }
+  this.roster[username] = screenName;
+  if (this.updateRoster !== undefined) {
+    this.updateRoster(this.roster);
   }
 };
 
 ChronoChat.prototype.leave = function()
 {
   this.messageCacheAppend("LEAVE", "");
+  this.userLeave(this.username);
+};
+
+ChronoChat.prototype.join = function()
+{
+  if (!this.roster.hasOwnProperty(this.username)) {
+    this.messageCacheAppend("JOIN", "");
+    this.userJoin(this.username, this.screenName);
+  } else {
+    console.log("Error: chat roster has this user's username");
+  }
 };
 
 /**

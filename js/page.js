@@ -103,7 +103,7 @@ $(document).ready(function(){
 
   screenName = getRandomNameString();
   var hubPrefix = "/ndn/edu/ucla/remap";
-  var chatroom = "test";
+  var chatroom = "more";
   var hostName = "localhost";
 
   if (screenName == "" || chatroom == "") {
