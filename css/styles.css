@@ -167,6 +167,8 @@ commenting and feed of comments
     margin: 5px;
     padding: 0px;
     background: white; 
+    /* zhehao: add margin-bottom for default media scale */
+    margin-bottom: 150px;
         }
    
 .comment p {

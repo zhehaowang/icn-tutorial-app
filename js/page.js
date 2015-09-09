@@ -171,19 +171,16 @@ function sendMessageClick() {
 function onUserLeave(from, time, msg) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Leave</p>';
-  objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function onChatData(from, time, msg) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span><br>' + msg + '</p>';
-  objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function onUserJoin(from, time, msg) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Join</p>';
-  objDiv.scrollTop = objDiv.scrollHeight;
 }
 
 function updateRoster(roster) {

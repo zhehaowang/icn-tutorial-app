@@ -11,7 +11,6 @@ var IndexedDbChatStorage = function IndexedDbChatStorage(dbName, face)
     this.database.open().catch(function(error){
       console.log("Dexie DB opening error: " + error);
     });
-    //this.database.delete();
   } else {
     console.log("Dexie not defined for persistent storage.");
   }
@@ -29,7 +28,7 @@ IndexedDbChatStorage.prototype.add = function(data)
 {
   var content = new Blob(data.wireEncode()).buf();
   this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function() {
-
+    
   });
 };
 
@@ -72,7 +71,7 @@ IndexedDbChatStorage.prototype.onInterest = function(prefix, interest, face, int
       var onDataNotFound = self.onDataNotFoundForPrefix[prefix.toUri()];
       if (onDataNotFound) {
         onDataNotFound(prefix, interest, face, interestFilterId, filter);
-      }   
+      }
     }
   })
 }

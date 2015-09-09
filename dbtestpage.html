@@ -1,0 +1,21 @@
+<html>
+<head></head>
+
+<body>
+<button onclick="onDeleteClick()">Delete indexeddb chatdb</button>
+
+<script src="js/ndn.min.js"></script>
+<script src="js/dexie.min.js"></script>
+
+<script src="js/indexeddb-storage.js"></script>
+
+<script>
+  var chatStorage = new IndexedDbChatStorage("chatdb", undefined);
+  
+  function onDeleteClick() {
+    chatStorage.delete();
+  }
+  
+</script>
+</body>
+</html>
