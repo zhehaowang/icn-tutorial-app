@@ -35,8 +35,9 @@ IndexedDbChatStorage.prototype.add = function(data)
 
 IndexedDbChatStorage.prototype.registerPrefix = function(prefix, onRegisterFailed, onDataNotFound, flags, wireFormat) 
 {
-  if (onDataNotFound)
+  if (onDataNotFound) {
     this.onDataNotFoundForPrefix[prefix.toUri()] = onDataNotFound;
+  }
   var registeredPrefixId = this.face.registerPrefix
     (prefix, this.onInterest.bind(this), onRegisterFailed, flags, wireFormat);
   this.registeredPrefixIdList.push(registeredPrefixId);
@@ -68,9 +69,10 @@ IndexedDbChatStorage.prototype.onInterest = function(prefix, interest, face, int
       data.wireDecode(new Blob(item.content));
       self.face.putData(data); 
     } else {
-      var onDataNotFound = this.onDataNotFoundForPrefix[prefix.toUri()];
-      if (onDataNotFound)
+      var onDataNotFound = self.onDataNotFoundForPrefix[prefix.toUri()];
+      if (onDataNotFound) {
         onDataNotFound(prefix, interest, face, interestFilterId, filter);
+      }   
     }
   })
 }

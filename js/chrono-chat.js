@@ -38,7 +38,7 @@ var ChronoChat = function
     this.username = username;
   }
   this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom).append(this.username);
-  console.log("My chat prefix: " + this.chatPrefix.toUri());
+  console.log("My chat prefix: " + this.chatPrefix.toUri() + " ; My screen name " + this.screenName);
 
   this.roster = {};
   this.interestSeqDict = {};
@@ -130,7 +130,6 @@ ChronoChat.prototype.onInterest = function
 
 ChronoChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
 {
-  console.log("Data not found for " + interest.getName().toUri() + " in persistent storage.");
   this.onInterest(prefix, interest, face, interestFilterId, filter);
 };
 
@@ -146,7 +145,6 @@ ChronoChat.prototype.initial = function()
     setInterval(self.heartbeat.bind(self), self.heartbeatInterval);
   }, self.heartbeatInterval);
   // Note: alternatively, let user call join, need changes in the library, so that initial interest is not expressed in constructor, but in a "start" function instead
-  this.join();
 
   // Display the persistently stored local messages
   var self = this;
@@ -155,7 +153,11 @@ ChronoChat.prototype.initial = function()
       var data = new Data();
       data.wireDecode(new Blob(item.content));
       self.onData(undefined, data);
+    }).then(function() {
+      self.join();
     });
+  } else {
+    this.join();
   }
 };
 
