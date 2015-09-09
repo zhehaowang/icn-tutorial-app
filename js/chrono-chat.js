@@ -80,7 +80,7 @@ var ChronoChat = function
 
     // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
     if (this.usePersistentStorage) {
-      this.chatStorage.registerPrefix(this.chatPrefix, this.onRegisterFailed, this.onPersistentDataNotFound);
+      this.chatStorage.registerPrefix(this.chatPrefix, this.onRegisterFailed.bind(this), this.onPersistentDataNotFound.bind(this));
     } else {
       face.registerPrefix
         (this.chatPrefix, this.onInterest.bind(this),
