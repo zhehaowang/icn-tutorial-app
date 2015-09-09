@@ -124,9 +124,9 @@ $(document).ready(function(){
   privateKeyStorage.setKeyPairForKeyName
     (keyName, KeyType.RSA, DEFAULT_RSA_PUBLIC_KEY_DER, DEFAULT_RSA_PRIVATE_KEY_DER);
   face.setCommandSigningInfo(keyChain, certificateName);
-  
+
   chronoChat = new ChronoChat
-    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster);
+    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster, true);
 
   $("#chatBtn").click(function () {
     sendMessageClick();
