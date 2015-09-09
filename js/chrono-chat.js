@@ -61,6 +61,14 @@ var ChronoChat = function
 
   //this.username = this.screenName + session;
   
+  this.usePersistentStorage = usePersistentStorage;
+  if (this.usePersistentStorage === undefined) {
+    this.usePersistentStorage = false;
+  }
+  if (this.usePersistentStorage) {
+    this.chatStorage = new IndexedDbChatStorage("chatdb", this.face);
+  }
+
   if (this.screenName == "" || this.chatroom == "") {
     console.log("input username and chatroom");
   } else {
@@ -69,9 +77,15 @@ var ChronoChat = function
        (new Name("/ndn/broadcast/ChronoChat-0.3")).append(this.chatroom), this.session,
         face, keyChain, certificateName, this.syncLifetime,
         this.onRegisterFailed.bind(this));
-    face.registerPrefix
-      (this.chatPrefix, this.onInterest.bind(this),
-       this.onRegisterFailed.bind(this));
+
+    // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
+    if (this.usePersistentStorage) {
+      this.chatStorage.registerPrefix(this.chatPrefix, this.onRegisterFailed, this.onPersistentDataNotFound);
+    } else {
+      face.registerPrefix
+        (this.chatPrefix, this.onInterest.bind(this),
+         this.onRegisterFailed.bind(this));
+    }
   }
 
   // UI callbacks
@@ -79,14 +93,6 @@ var ChronoChat = function
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
   this.updateRoster = updateRoster;
-
-  this.usePersistentStorage = usePersistentStorage;
-  if (this.usePersistentStorage === undefined) {
-    this.usePersistentStorage = false;
-  }
-  if (this.usePersistentStorage) {
-    this.chatStorage = new IndexedDbChatStorage("chatdb");
-  }
 };
 
 /**
@@ -118,6 +124,12 @@ ChronoChat.prototype.onInterest = function
       break;
     }
   }
+};
+
+ChronoChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
+{
+  console.log("Data not found for " + interest.getName().toUri() + " in persistent storage.");
+  this.onInterest(prefix, interest, face, interestFilterId, filter);
 };
 
 ChronoChat.prototype.onRegisterFailed = function(prefix)
@@ -320,7 +332,7 @@ ChronoChat.prototype.messageCacheAppend = function(messageType, message)
     data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
     this.keyChain.sign(data, this.certificateName);
 
-    this.chatStorage.addData(data);
+    this.chatStorage.add(data);
   }
 
   while (this.msgCache.length > this.maxmsgCacheLength) {
