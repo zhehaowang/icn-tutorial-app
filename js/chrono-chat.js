@@ -93,6 +93,8 @@ var ChronoChat = function
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
   this.updateRoster = updateRoster;
+
+  //this.chatStorage.delete();
 };
 
 /**
@@ -261,14 +263,15 @@ ChronoChat.prototype.alive = function(temp_seq, name, session, prefix)
 
 ChronoChat.prototype.userLeave = function(username, time)
 {
+  console.log("user leave for " + username);
   if (username in this.roster && username != this.username) {
     if (this.onUserLeave !== undefined) {
       this.onUserLeave(this.roster[username], time, "");
     }
+    delete this.roster[username];
     if (this.updateRoster !== undefined) {
       this.updateRoster(this.roster);
     }
-    delete this.roster[username];
   }
   if (username in this.interestSeqDict) {
     delete this.interestSeqDict[username]; 
@@ -323,15 +326,16 @@ ChronoChat.prototype.messageCacheAppend = function(messageType, message)
 {
   var time = (new Date()).getTime();
   this.sync.publishNextSequenceNo();
-  this.msgCache.push(new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time));
+  var content = new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time)
+
+  this.msgCache.push(content);
   
   if (this.usePersistentStorage && messageType !== "HELLO") {
     // Note: here memory content cache vs existing msgCache?
     var data = new Data((new Name(this.chatPrefix)).append(this.session.toString()).append(this.sync.getSequenceNo().toString()));
-    data.setContent((new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time)).encode());
+    data.setContent(content.encode());
     data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
     this.keyChain.sign(data, this.certificateName);
-
     this.chatStorage.add(data);
   }
 

@@ -133,6 +133,16 @@ $(document).ready(function(){
   });
 
   $("#chatTextInput").keyup(checkKey);
+  
+  // Note: BeforeUnload event may not work in Opera; support in other browsers to be tested, too.
+  // if called in unload instead, the Dexie.table.put promise may not have time to finish, thus having LEAVE message not inserted
+  jQuery(window).bind('beforeunload', function(e) {
+    try {
+      chronoChat.leave();
+    } catch (e) {
+      console.log(e);
+    }
+  });
 });
 
 function sendMessageClick() {

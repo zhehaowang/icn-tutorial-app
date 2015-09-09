@@ -28,7 +28,9 @@ var IndexedDbChatStorage = function IndexedDbChatStorage(dbName, face)
 IndexedDbChatStorage.prototype.add = function(data) 
 {
   var content = new Blob(data.wireEncode()).buf();
-  this.database.messages.put({"name": data.getName().toUri(), "content": content});
+  this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function() {
+
+  });
 };
 
 IndexedDbChatStorage.prototype.registerPrefix = function(prefix, onRegisterFailed, onDataNotFound, flags, wireFormat) 
@@ -64,7 +66,6 @@ IndexedDbChatStorage.prototype.onInterest = function(prefix, interest, face, int
     if (item !== undefined) {
       var data = new Data();
       data.wireDecode(new Blob(item.content));
-      console.log(data);
       self.face.putData(data); 
     } else {
       var onDataNotFound = this.onDataNotFoundForPrefix[prefix.toUri()];
