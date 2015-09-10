@@ -156,7 +156,7 @@
   3. Put in Jeff's policy
   4. Make sure root key's installed, correctly configure the PolicyManager
   5. Test with a few certs I have from my cert site
-  6. Trust for sync response, which should be handled in the library? The app should give the library its trust schema for sync responses?
+  6. Q: Trust for sync response, which should be handled in the library? The app should give the library its trust schema for sync responses?
 -->
 
 <!--
@@ -164,7 +164,7 @@
   1. sendInterest logic probably should ask for everything that hasn't be asked for, according to given sequence numbers
   2. onTimeout should re-express interest, max number of re-expressions?
   3. Recovery scenario tests?
-  4. How does a new participant know *all* the previous names of participants? Will they be in the same sync tree? (They should...but that tree may not be kept by anyone when a new participant joins? The network may cache this tree, but its data may go stale, etc, should we ask for stale data too?)
+  4. Q: How does a new participant know *all* the previous names of participants? Will they be in the same sync tree? (They should...but that tree may not be kept by anyone when a new participant joins? The network may cache this tree, but its data may go stale, etc, should we ask for stale data too?)
   5. Each email has its one chat publishing prefix, or each email can pick whatever (nick)name to use? Looks like it shouldn't be whatever name, but a timestamped session component. 
   6. Remind me of the session ID in chat messages, it's a different thing from what's in Chrono*Sync*2013's session(basically a part of the given sync name) now.
 -->

@@ -1,0 +1,94 @@
+<?xml version = "1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"DTD/xhtml1-strict.dtd">
+<html xmlns = "http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>Test Validate</title>
+
+  <script src="../js/ndn.min.js"></script>
+  <script type="text/javascript">
+
+var AppConfig = function AppConfig()
+{
+  this.host = "127.0.0.1";
+  var policyManager = new ConfigPolicyManager();
+  this.identityStorage = new IndexedDbIdentityStorage();
+  this.keyChain = new KeyChain
+    (new IdentityManager(this.identityStorage, new IndexedDbPrivateKeyStorage()),
+     policyManager);
+  this.setUpMockIcn(function (trustAnchorBase64) {
+    console.log(trustAnchorBase64);
+    console.log("Set up complete.");
+  });
+};
+
+AppConfig.prototype.setUpMockIcn = function(onComplete)
+{
+  // Set up a new face for receiving interests from this same application.0
+  var mockIcnFace = new Face({host: this.host});
+  var mockIcnIdentityName = new Name("/ndn/org/icn");
+  var thisConfig = this;
+  // This re-uses the existing keys/certificate if they are already created.
+  this.keyChain.createIdentityAndCertificate
+    (mockIcnIdentityName, function(certificateName) {
+    thisConfig.mockIcnCertificateName = certificateName;
+    console.log("Cert name " + certificateName.toUri());
+    mockIcnFace.setCommandSigningInfo(thisConfig.keyChain, certificateName);
+    mockIcnFace.registerPrefix
+      (mockIcnIdentityName, thisConfig.mockIcnOnInterest.bind(thisConfig),
+       function() { console.log("Register failed for the mock ICN authority."); });
+    // Retrieve the certificate.
+    thisConfig.identityStorage.getCertificatePromise(certificateName, true)
+    .then(function(certificate) {
+      onComplete(certificate.wireEncode().buf().toString('base64'));
+    });
+  });
+}
+
+AppConfig.prototype.mockIcnOnInterest = function
+  (prefix, interest, face, interestFilterId, filter)
+{
+  // Cheat sign signs the user certificate when it's asked for.
+  console.log("Got interest: " + interest.getName().toUri());
+  if (!(interest.getName().size() == 8 &&
+        interest.getName().get(7).toEscapedString() == "ID-CERT"))
+    // Not an interest for a user certificate.
+    return;
+  // Get the user's self-signed cert.
+  var keyName = IdentityCertificate.certificateNameToPublicKeyName
+    (interest.getName());
+  var thisConfig = this;
+  this.identityStorage.getDefaultCertificateNameForKeyPromise(keyName)
+  .then(function(defaultCertificateName) {
+    return thisConfig.identityStorage.getCertificatePromise
+      (defaultCertificateName, true);
+  })
+  .then(function(certificate) {
+    // Update the certificate version and sign with the mock authority.
+    certificate.setName
+      (certificate.getName().getPrefix(-1).appendVersion(new Date().getTime()));
+    thisConfig.keyChain.sign
+      (certificate, thisConfig.mockIcnCertificateName, function() {
+      face.putData(certificate);
+      console.log("Sent mock certificate " + certificate.getName().toUri());
+    });
+  })
+  .catch(function(err) {
+    console.log("mockIcnOnInterest error " + err);
+  });
+};
+
+function doServe() 
+{
+  var appConfig = new AppConfig();
+}
+
+  </script>
+</head>
+<body >
+  Code from Jeff T's sample tutorial app with minimal change
+  <p>Click serve ICN root cert so that it would be served.</p>
+  <button onclick="doServe()">Serve ICN root cert</button>
+</body>
+</html>

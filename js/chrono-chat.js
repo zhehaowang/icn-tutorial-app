@@ -23,7 +23,7 @@
 // NOTE: constructor now takes the actual username as a parameter
 var ChronoChat = function
    (screenName, username, chatroom, hubPrefix, 
-    face, keyChain, certificateName, 
+    face, keyChain, 
     onChatData, onUserLeave, onUserJoin, updateRoster,
     usePersistentStorage)
 {
@@ -32,14 +32,18 @@ var ChronoChat = function
   this.isRecoverySyncState = true;
   this.face = face;
   this.keyChain = keyChain;
-  this.certificateName = certificateName;
   
   if (username === undefined) {
     this.username = this.getRandomString();
   } else {
     this.username = username;
   }
-  this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom).append(this.username);
+
+  // NOTE: The session number used with the applicationDataPrefix in sync state messages, why is session in sync state messages?
+  this.session = parseInt((new Date()).getTime()/1000);
+
+  this.identityName = (new Name(hubPrefix)).append(this.username);
+  this.chatPrefix = (new Name(this.identityName)).append("CHAT").append("CHANNEL").append(this.chatroom).append("SESSION").append(this.session.toString());
   console.log("My chat prefix: " + this.chatPrefix.toUri() + " ; My screen name " + this.screenName);
 
   // roster keeps the identities that have responded; 
@@ -65,10 +69,6 @@ var ChronoChat = function
   
   this.chatDataLifetime = 10000;
 
-  // TODO: Checkalive mechanism
-  // NOTE: The session number used with the applicationDataPrefix in sync state messages 
-  this.session = parseInt((new Date()).getTime()/1000);
-
   //this.username = this.screenName + session;
   
   this.usePersistentStorage = usePersistentStorage;
@@ -79,32 +79,45 @@ var ChronoChat = function
     this.chatStorage = new IndexedDbChatStorage("chatdb", this.face);
   }
 
-  if (this.screenName == "" || this.chatroom == "") {
-    console.log("input username and chatroom");
-  } else {
-    this.sync = new ChronoSync2013
-      (this.sendInterest.bind(this), this.initial.bind(this), this.chatPrefix,
-       (new Name("/ndn/broadcast/ChronoChat-0.3")).append(this.chatroom), this.session,
-        face, keyChain, certificateName, this.syncLifetime,
-        this.onRegisterFailed.bind(this));
-
-    // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
-    if (this.usePersistentStorage) {
-      this.chatStorage.registerPrefix(this.chatPrefix, this.onRegisterFailed.bind(this), this.onPersistentDataNotFound.bind(this));
-    } else {
-      face.registerPrefix
-        (this.chatPrefix, this.onInterest.bind(this),
-         this.onRegisterFailed.bind(this));
-    }
-  }
-
   // UI callbacks
   this.onChatData = onChatData;
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
-  this.updateRoster = updateRoster;
+  this.updateRoster = updateRoster;  
 
   //this.chatStorage.delete();
+
+  var self = this;
+  this.keyChain.createIdentityAndCertificate
+    (this.identityName, function(myCertficateName) {
+    console.log("myCertficateName: " + myCertficateName.toUri());
+
+    self.certificateName = myCertficateName;
+
+    if (self.screenName == "" || self.chatroom == "") {
+      console.log("input username and chatroom");
+    } else {
+      try {
+        self.face.setCommandSigningInfo(self.keyChain, self.certificateName);
+        self.sync = new ChronoSync2013
+          (self.sendInterest.bind(self), self.initial.bind(self), self.chatPrefix,
+           (new Name("/ndn/broadcast/ChronoChat-0.3")).append(self.chatroom), self.session,
+            self.face, self.keyChain, self.certificateName, self.syncLifetime,
+            self.onRegisterFailed.bind(self));
+      } catch (e) {
+        console.log(e);
+      }
+
+      // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
+      if (self.usePersistentStorage) {
+        self.chatStorage.registerPrefix(self.chatPrefix, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+      } else {
+        face.registerPrefix
+          (self.chatPrefix, self.onInterest.bind(self),
+           self.onRegisterFailed.bind(self));
+      }
+    }
+  });
 };
 
 /**
@@ -118,20 +131,22 @@ var ChronoChat = function
 ChronoChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  var chatPrefixSize = this.chatPrefix.size();
-  var seq = parseInt(interest.getName().get(chatPrefixSize + 1).toEscapedString());
+  var seq = parseInt(interest.getName().get(-1).toEscapedString());
   for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
     if (this.msgCache[i].seqNo == seq) {
       var data = new Data(interest.getName());
       data.setContent(this.msgCache[i].encode());
       data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
 
-      this.keyChain.sign(data, this.certificateName);
-      try {
-        face.putData(data);
-      } catch (e) {
-        console.log(e.toString());
-      }
+      this.keyChain.sign(data, this.certificateName, function() {
+        console.log("Data was signed. key locator: " +
+          data.getSignature().getKeyLocator().getKeyName().toUri());
+        try {
+          face.putData(data);
+        } catch (e) {
+          console.log(e.toString());
+        }
+      });
       break;
     }
   }
@@ -209,7 +224,7 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
   for (var dataPrefix in sendList) {
     var tempName = new Name(dataPrefix).get(-1).toEscapedString();
     if (!(tempName in this.interestSeqDict) || sendList[dataPrefix].seqNo > this.interestSeqDict[tempName]) {
-      var name = (new Name(dataPrefix)).append(sendList[dataPrefix].sessionNo.toString()).append(sendList[dataPrefix].seqNo.toString());
+      var name = (new Name(dataPrefix)).append(sendList[dataPrefix].seqNo.toString());
       var interest = new Interest(new Name(name));
       interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
       this.face.expressInterest(interest, this.onData.bind(this), this.chatTimeout.bind(this));
@@ -223,15 +238,16 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
 ChronoChat.prototype.onData = function(interest, data)
 {
   console.log("Got data: " + data.getName().toUri());
+  this.keyChain.verifyData(data, 
+    function () {console.log("Data verified.")}, 
+    function () {console.log("Data verify failed.")});
 
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
   
-  var prefix = data.getName().getPrefix(-2).toUri();
-
-  // TODO: This assumes knowledge of how the library would manipulate the name in application code
+  // NOTE: this makes assumption about where the names are
   var session = parseInt((data.getName().get(-2)).toEscapedString());
   var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-  var name = data.getName().get(-3).toEscapedString();
+  var name = data.getName().get(-7).toEscapedString();
 
   if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
     this.userJoin(content.fromUsername, content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString());
@@ -252,7 +268,7 @@ ChronoChat.prototype.onData = function(interest, data)
     if (this.roster[content.fromUsername].checkAliveEvent !== undefined) {
       clearTimeout(this.roster[content.fromUsername].checkAliveEvent);
     }
-    this.roster[content.fromUsername].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session, prefix), this.checkAliveWaitPeriod);  
+    this.roster[content.fromUsername].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name), this.checkAliveWaitPeriod);  
   }
 
   if (this.usePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined) {
@@ -271,7 +287,7 @@ ChronoChat.prototype.heartbeat = function()
   this.messageCacheAppend("HELLO", "");
 };
 
-ChronoChat.prototype.checkAlive = function(prevSeq, name, session, prefix)
+ChronoChat.prototype.checkAlive = function(prevSeq, name)
 {
   if (name in this.roster) {
     var seq = this.roster[name].lastReceivedSeq;    
@@ -366,11 +382,14 @@ ChronoChat.prototype.messageCacheAppend = function(messageType, message)
   
   if (this.usePersistentStorage && messageType !== "HELLO") {
     // Note: here memory content cache vs existing msgCache?
-    var data = new Data((new Name(this.chatPrefix)).append(this.session.toString()).append(this.sync.getSequenceNo().toString()));
+    var data = new Data((new Name(this.chatPrefix)).append(this.sync.getSequenceNo().toString()));
     data.setContent(content.encode());
     data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
-    this.keyChain.sign(data, this.certificateName);
-    this.chatStorage.add(data);
+    this.keyChain.sign(data, this.certificateName, function() {
+      console.log("Data was signed. key locator: " +
+        data.getSignature().getKeyLocator().getKeyName().toUri());
+      this.chatStorage.add(data);
+    });
   }
 
   while (this.msgCache.length > this.maxmsgCacheLength) {
