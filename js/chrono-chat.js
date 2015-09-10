@@ -40,7 +40,13 @@ var ChronoChat = function
   this.chatPrefix = (new Name(hubPrefix)).append(this.chatroom).append(this.username);
   console.log("My chat prefix: " + this.chatPrefix.toUri() + " ; My screen name " + this.screenName);
 
+  // roster keeps the identities that have responded; 
+  //   key - unique username; 
+  //   value - {screenName: user's screen name, lastReceivedSeq: last received sequence number from user};
   this.roster = {};
+  // interestSeqDict keeps the sequence numbers of interests that are sent;
+  //   key - unique username;
+  //   value - latest sequence number for this username that we sent;
   this.interestSeqDict = {};
 
   this.msgCache = [];
@@ -237,6 +243,10 @@ ChronoChat.prototype.onData = function(interest, data)
   } else if (content.msgType == "LEAVE") {
     this.userLeave(content.fromUsername, (new Date(content.timestamp)).toLocaleTimeString());
   }
+
+  if (content.fromUsername in this.roster) {
+    this.roster[content.fromUsername].lastReceivedSeq = seqNo;
+  }
 };
 
 ChronoChat.prototype.chatTimeout = function(interest)
@@ -249,15 +259,13 @@ ChronoChat.prototype.heartbeat = function()
   this.messageCacheAppend("HELLO", "");
 };
 
-ChronoChat.prototype.alive = function(temp_seq, name, session, prefix)
+ChronoChat.prototype.alive = function(prevSeq, name, session, prefix)
 {
-  var index_n = this.sync.digest_tree.find(prefix, session);
-
-  if (index_n != -1 && name in this.roster) {
-    // NOTE: this assumes knowledge of interior structure of ChronoSync2013 in application code.
-    var seq = this.sync.digest_tree.digestnode[index_n].seqno_seq;
+  if (name in this.roster) {
+    var seq = this.roster[name].lastReceivedSeq;
+    console.log("Checking against recorded " + prevSeq + " with later " + seq);
     
-    if (temp_seq == seq) {
+    if (prevSeq == seq) {
       this.userLeave(name, (new Date()).toLocaleTimeString());
     }
   }
@@ -268,7 +276,7 @@ ChronoChat.prototype.userLeave = function(username, time)
   console.log("user leave for " + username);
   if (username in this.roster && username != this.username) {
     if (this.onUserLeave !== undefined) {
-      this.onUserLeave(this.roster[username], time, "");
+      this.onUserLeave(this.roster[username].screenName, time, "");
     }
     delete this.roster[username];
     if (this.updateRoster !== undefined) {
@@ -280,12 +288,16 @@ ChronoChat.prototype.userLeave = function(username, time)
   }
 };
 
-ChronoChat.prototype.userJoin = function(username, screenName, time)
+ChronoChat.prototype.userJoin = function(username, screenName, time, sequenceNo)
 {
   if (this.onUserJoin !== undefined) {
     this.onUserJoin(screenName, time, "");
   }
-  this.roster[username] = screenName;
+  if (sequenceNo !== undefined) {
+    this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': sequenceNo};
+  } else {
+    this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': 0};
+  }
   if (this.updateRoster !== undefined) {
     this.updateRoster(this.roster);
   }

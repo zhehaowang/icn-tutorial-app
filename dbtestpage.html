@@ -1,5 +1,11 @@
-<html>
-<head></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="NDN Chat">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test page for indexeddb</title>
+ </head>
 
 <body>
 <button onclick="onDeleteClick()">Delete indexeddb chatdb</button>
@@ -14,6 +20,7 @@
   
   function onDeleteClick() {
     chatStorage.delete();
+    console.log("delete called on chatStorage");
   }
   
 </script>

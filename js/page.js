@@ -126,7 +126,7 @@ $(document).ready(function(){
   face.setCommandSigningInfo(keyChain, certificateName);
 
   chronoChat = new ChronoChat
-    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster, true);
+    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster, false);
 
   $("#chatBtn").click(function () {
     sendMessageClick();
@@ -187,7 +187,8 @@ function updateRoster(roster) {
   var objDiv = document.getElementById("rosterDisplayDiv");
   objDiv.innerHTML = "";
   for (var name in roster) {
-    objDiv.innerHTML += '<li>' + roster[name] + '</li>';
+    // Note: this assumes application knowledge of structure of object Roster
+    objDiv.innerHTML += '<li>' + roster[name].screenName + '</li>';
   }
   objDiv.innerHTML += '</ul>';
 }

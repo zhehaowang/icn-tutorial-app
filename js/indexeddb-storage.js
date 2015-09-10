@@ -26,9 +26,11 @@ var IndexedDbChatStorage = function IndexedDbChatStorage(dbName, face)
  */
 IndexedDbChatStorage.prototype.add = function(data) 
 {
+  // In Firefox, transaction not complete error occurs onPageReload; said to be fixed in Firefox 41
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1147942
   var content = new Blob(data.wireEncode()).buf();
   this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function() {
-    
+    //console.log("Appended content " + data.getContent().toString());
   });
 };
 
@@ -44,8 +46,8 @@ IndexedDbChatStorage.prototype.registerPrefix = function(prefix, onRegisterFaile
 
 IndexedDbChatStorage.prototype.delete = function() 
 {
-  this.database.delete();
-}
+  return this.database.delete();
+};
 
 IndexedDbChatStorage.prototype.unregisterAll = function()
 {
