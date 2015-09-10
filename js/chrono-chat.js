@@ -18,6 +18,8 @@
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
 
+// TODO: Test if my ChronoSync lib handles recovery correctly.
+
 // NOTE: constructor now takes the actual username as a parameter
 var ChronoChat = function
    (screenName, username, chatroom, hubPrefix, 
@@ -42,7 +44,9 @@ var ChronoChat = function
 
   // roster keeps the identities that have responded; 
   //   key - unique username; 
-  //   value - {screenName: user's screen name, lastReceivedSeq: last received sequence number from user};
+  //   value - {screenName: user's screen name, 
+  //            lastReceivedSeq: last received sequence number from user,
+  //            checkAliveEvent: the timeout event for checking back whether this participant is alive};
   this.roster = {};
   // interestSeqDict keeps the sequence numbers of interests that are sent;
   //   key - unique username;
@@ -114,8 +118,7 @@ var ChronoChat = function
 ChronoChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  // chatPrefix should really be saved as a name, not a URI string.
-  var chatPrefixSize = new Name(this.chatPrefix).size();
+  var chatPrefixSize = this.chatPrefix.size();
   var seq = parseInt(interest.getName().get(chatPrefixSize + 1).toEscapedString());
   for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
     if (this.msgCache[i].seqNo == seq) {
@@ -180,6 +183,8 @@ ChronoChat.prototype.dummyOnData = function(interest, data)
  * Send a Chat interest to fetch chat messages after the user gets the Sync data packet
  * @param {SyncStates[]} The array of sync states
  * @param {bool} if it's in recovery state
+ *
+ * NOTE: for given SyncStates, sendInterest may not send interest for every currently missing sequence numbers: this may not be the expected behavior.
  */
 ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
 {
@@ -221,20 +226,17 @@ ChronoChat.prototype.onData = function(interest, data)
 
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
   
-  // chatPrefix should be saved as a name, not a URI string.
   var prefix = data.getName().getPrefix(-2).toUri();
 
   // TODO: This assumes knowledge of how the library would manipulate the name in application code
   var session = parseInt((data.getName().get(-2)).toEscapedString());
   var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-  var name = data.getName().get(-3).toEscapedString()
+  var name = data.getName().get(-3).toEscapedString();
 
   if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
     this.userJoin(content.fromUsername, content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString());
   }
   
-  setTimeout(this.alive.bind(this, seqNo, name, session, prefix), this.checkAliveWaitPeriod);
-
   if (content.msgType == "CHAT" && content.fromUsername != this.username){
     var escaped_msg = $('<div/>').text(content.data).html();
     if (this.onChatData !== undefined) {
@@ -246,6 +248,16 @@ ChronoChat.prototype.onData = function(interest, data)
 
   if (content.fromUsername in this.roster) {
     this.roster[content.fromUsername].lastReceivedSeq = seqNo;
+    // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
+    if (this.roster[content.fromUsername].checkAliveEvent !== undefined) {
+      clearTimeout(this.roster[content.fromUsername].checkAliveEvent);
+    }
+    this.roster[content.fromUsername].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session, prefix), this.checkAliveWaitPeriod);  
+  }
+
+  if (this.usePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined) {
+    // Assuming that the same name in data packets always contain identitcal data packets
+    this.chatStorage.add(data);
   }
 };
 
@@ -259,14 +271,22 @@ ChronoChat.prototype.heartbeat = function()
   this.messageCacheAppend("HELLO", "");
 };
 
-ChronoChat.prototype.alive = function(prevSeq, name, session, prefix)
+ChronoChat.prototype.checkAlive = function(prevSeq, name, session, prefix)
 {
   if (name in this.roster) {
-    var seq = this.roster[name].lastReceivedSeq;
-    console.log("Checking against recorded " + prevSeq + " with later " + seq);
-    
+    var seq = this.roster[name].lastReceivedSeq;    
     if (prevSeq == seq) {
       this.userLeave(name, (new Date()).toLocaleTimeString());
+
+      // Note: for participants who already left but whose leave message did not get through to the local storage, 
+      // we can only detect that they left after the checkAliveInterval;
+      // Creating our own leave messages for those participants as if we received them is bad, because they may not have left, 
+      // and the history in the network would be messed up.
+      /*
+      if (this.usePersistentStorage) {
+
+      }
+      */
     }
   }
 };

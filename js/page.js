@@ -126,7 +126,7 @@ $(document).ready(function(){
   face.setCommandSigningInfo(keyChain, certificateName);
 
   chronoChat = new ChronoChat
-    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster, false);
+    (screenName, undefined, chatroom, hubPrefix, face, keyChain, certificateName, onChatData, onUserLeave, onUserJoin, updateRoster, true);
 
   $("#chatBtn").click(function () {
     sendMessageClick();

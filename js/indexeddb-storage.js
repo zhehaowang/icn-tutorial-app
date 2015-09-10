@@ -24,13 +24,17 @@ var IndexedDbChatStorage = function IndexedDbChatStorage(dbName, face)
 /**
  * IndexedDbChatStorage tries to provide an interface similar to that of memoryContentCache
  */
-IndexedDbChatStorage.prototype.add = function(data) 
+IndexedDbChatStorage.prototype.add = function(data, onAdd) 
 {
   // In Firefox, transaction not complete error occurs onPageReload; said to be fixed in Firefox 41
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1147942
   var content = new Blob(data.wireEncode()).buf();
-  this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function() {
+  this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function(param) {
     //console.log("Appended content " + data.getContent().toString());
+    // TODO: look up param list for the then of the promise returned by put
+    if (onAdd !== undefined) {
+      onAdd(param);
+    }
   });
 };
 
@@ -76,4 +80,11 @@ IndexedDbChatStorage.prototype.onInterest = function(prefix, interest, face, int
       }
     }
   })
+}
+
+IndexedDbChatStorage.prototype.get = function(matchStr)
+{
+  this.database.messages.get(matchStr, function(item) {
+    return item;
+  });
 }
