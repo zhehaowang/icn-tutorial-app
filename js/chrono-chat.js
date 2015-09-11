@@ -21,18 +21,20 @@
 // TODO: Test if my ChronoSync lib handles recovery correctly.
 
 // NOTE: constructor now takes the actual username as a parameter
+// requireVerification decides whether a unverified piece of data should trigger checkAlive timeouts and store into indexeddb
 var ChronoChat = function
    (screenName, username, chatroom, hubPrefix, 
     face, keyChain, 
     onChatData, onUserLeave, onUserJoin, updateRoster,
-    usePersistentStorage)
+    usePersistentStorage, requireVerification)
 {
   this.screenName = screenName;
   this.chatroom = chatroom;
   this.isRecoverySyncState = true;
   this.face = face;
   this.keyChain = keyChain;
-  
+  this.requireVerification = requireVerification;
+
   if (username === undefined) {
     this.username = this.getRandomString();
   } else {
@@ -235,13 +237,8 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
 };
 
-ChronoChat.prototype.onData = function(interest, data)
+ChronoChat.prototype.processData = function(interest, data, verified)
 {
-  console.log("Got data: " + data.getName().toUri());
-  this.keyChain.verifyData(data, 
-    function () {console.log("Data verified.")}, 
-    function () {console.log("Data verify failed.")});
-
   var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
   
   // NOTE: this makes assumption about where the names are
@@ -250,19 +247,19 @@ ChronoChat.prototype.onData = function(interest, data)
   var name = data.getName().get(-7).toEscapedString();
 
   if (!(content.fromUsername in this.roster) && content.msgType != "LEAVE") {
-    this.userJoin(content.fromUsername, content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString());
+    this.userJoin(content.fromUsername, content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString(), verified);
   }
   
   if (content.msgType == "CHAT" && content.fromUsername != this.username){
     var escaped_msg = $('<div/>').text(content.data).html();
     if (this.onChatData !== undefined) {
-      this.onChatData(content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString(), escaped_msg);
+      this.onChatData(content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString(), escaped_msg, verified);
     }
   } else if (content.msgType == "LEAVE") {
-    this.userLeave(content.fromUsername, (new Date(content.timestamp)).toLocaleTimeString());
+    this.userLeave(content.fromUsername, (new Date(content.timestamp)).toLocaleTimeString(), verified);
   }
 
-  if (content.fromUsername in this.roster) {
+  if (content.fromUsername in this.roster && (verified || !this.requireVerification)) {
     this.roster[content.fromUsername].lastReceivedSeq = seqNo;
     // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
     if (this.roster[content.fromUsername].checkAliveEvent !== undefined) {
@@ -271,10 +268,26 @@ ChronoChat.prototype.onData = function(interest, data)
     this.roster[content.fromUsername].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name), this.checkAliveWaitPeriod);  
   }
 
-  if (this.usePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined) {
+  if (this.usePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined && content.msgType !== "HELLO" && (verified || !this.requireVerification)) {
     // Assuming that the same name in data packets always contain identitcal data packets
     this.chatStorage.add(data);
   }
+}
+
+ChronoChat.prototype.onData = function(interest, data)
+{
+  console.log("Got data: " + data.getName().toUri());
+
+  var self = this;
+  this.keyChain.verifyData(data, 
+    function () {
+      console.log("Data verified.");
+      self.processData(interest, data, true);
+    },
+    function () {
+      console.log("Data verify failed.");
+      self.processData(interest, data, false);
+    });
 };
 
 ChronoChat.prototype.chatTimeout = function(interest)
@@ -307,35 +320,41 @@ ChronoChat.prototype.checkAlive = function(prevSeq, name)
   }
 };
 
-ChronoChat.prototype.userLeave = function(username, time)
+ChronoChat.prototype.userLeave = function(username, time, verified)
 {
   console.log("user leave for " + username);
   if (username in this.roster && username != this.username) {
     if (this.onUserLeave !== undefined) {
-      this.onUserLeave(this.roster[username].screenName, time, "");
+      this.onUserLeave(this.roster[username].screenName, time, "", verified);
     }
-    delete this.roster[username];
-    if (this.updateRoster !== undefined) {
-      this.updateRoster(this.roster);
+    if (verified === undefined || verified || !this.requireVerification) {
+      delete this.roster[username];
+      if (this.updateRoster !== undefined) {
+        this.updateRoster(this.roster);
+      }  
     }
   }
-  if (username in this.interestSeqDict) {
-    delete this.interestSeqDict[username]; 
+  if (verified === undefined || verified || !this.requireVerification) {
+    if (username in this.interestSeqDict) {
+      delete this.interestSeqDict[username]; 
+    }
   }
 };
 
-ChronoChat.prototype.userJoin = function(username, screenName, time, sequenceNo)
+ChronoChat.prototype.userJoin = function(username, screenName, time, sequenceNo, verified)
 {
   if (this.onUserJoin !== undefined) {
-    this.onUserJoin(screenName, time, "");
+    this.onUserJoin(screenName, time, "", verified);
   }
-  if (sequenceNo !== undefined) {
-    this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': sequenceNo};
-  } else {
-    this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': 0};
-  }
-  if (this.updateRoster !== undefined) {
-    this.updateRoster(this.roster);
+  if (verified === undefined || verified || !this.requireVerification) {
+    if (sequenceNo !== undefined) {
+      this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': sequenceNo};
+    } else {
+      this.roster[username] = {'screenName': screenName, 'lastReceivedSeq': 0};
+    }
+    if (this.updateRoster !== undefined) {
+      this.updateRoster(this.roster);
+    }  
   }
 };
 

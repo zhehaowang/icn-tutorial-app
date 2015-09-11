@@ -54,7 +54,7 @@ $(document).ready(function(){
   policyManager.load(policy, "chat-policy");
 
   chronoChat = new ChronoChat
-    (screenName, undefined, chatroom, hubPrefix, face, keyChain, onChatData, onUserLeave, onUserJoin, updateRoster, false);
+    (screenName, undefined, chatroom, hubPrefix, face, keyChain, onChatData, onUserLeave, onUserJoin, updateRoster, true, false);
 
   $("#chatBtn").click(function () {
     sendMessageClick();
@@ -96,17 +96,17 @@ function sendMessageClick() {
  * @param time
  * @param msg
  */
-function onUserLeave(from, time, msg) {
+function onUserLeave(from, time, msg, verified) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Leave</p>';
 }
 
-function onChatData(from, time, msg) {
+function onChatData(from, time, msg, verified) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span><br>' + msg + '</p>';
 }
 
-function onUserJoin(from, time, msg) {
+function onUserJoin(from, time, msg, verified) {
   var objDiv = document.getElementById("chatDisplayDiv");
   objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Join</p>';
 }
