@@ -8,7 +8,13 @@
  </head>
 
 <body>
-<button onclick="onDeleteClick()">Delete indexeddb chatdb</button>
+<button onclick="onDeleteClick()">Delete indexeddb chatdb</button><br>
+<button onclick="onAddClick()">Add random stuff to indexeddb tempdb</button><br>
+<button onclick="onShowClick()">Show all stuff from indexeddb tempdb</button><br>
+
+<p>Contents of tempdb</p>
+
+<div id="contentDisplay"></div>
 
 <script src="../js/ndn.min.js"></script>
 <script src="../js/dexie.min.js"></script>
@@ -17,12 +23,37 @@
 
 <script>
   var chatStorage = new IndexedDbChatStorage("chatdb", undefined);
-  
+  var testStorage = new IndexedDbChatStorage("tempdb", undefined);
+
   function onDeleteClick() {
     chatStorage.delete();
     console.log("delete called on chatStorage");
   }
   
+  function onAddClick() {
+    content = "test content";
+    testStorage.database.messages.put({"name": getRandomString(), "content": content}).then(function(param) {
+      
+    });
+  }
+
+  function onShowClick() {
+    testStorage.database.messages.each(function (item) {
+      document.getElementById("contentDisplay").innerHTML += item.name + " : " + item.content + "<br>";
+    }).then(function () {
+      console.log("Showdb finished");
+    })
+  }
+
+  function getRandomString() {
+    var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789';
+    var result = '';
+    for (var i = 0; i < 10; i++) {
+      var pos = Math.floor(Math.random() * seed.length);
+      result += seed[pos];
+    }
+    return result;
+  };
 </script>
 </body>
 </html>

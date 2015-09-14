@@ -2,8 +2,7 @@ var chronoChat;
 var screenName = "";
 
 $(document).ready(function(){
-
-  screenName = getRandomNameString();
+  screenName = getRandomNameString(3);
   var hubPrefix = "/ndn/org/icn/USER";
   var chatroom = "more";
   var hostName = "localhost";
@@ -53,7 +52,7 @@ $(document).ready(function(){
     "}"                           + "\n";
   policyManager.load(policy, "chat-policy");
 
-  chronoChat = new ChronoChat
+  chronoChat = new FireChat
     (screenName, undefined, chatroom, hubPrefix, face, keyChain, onChatData, onUserLeave, onUserJoin, updateRoster, true, false);
 
   $("#chatBtn").click(function () {
@@ -127,3 +126,14 @@ function checkKey(event) {
     sendMessageClick();
   }
 }
+
+function getRandomNameString(len)
+{
+  var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM';
+  var result = '';
+  for (var i = 0; i < len; i++) {
+    var pos = Math.floor(Math.random() * seed.length);
+    result += seed[pos];
+  }
+  return result;
+};

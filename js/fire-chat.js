@@ -22,7 +22,7 @@
 
 // NOTE: constructor now takes the actual username as a parameter
 // requireVerification decides whether a unverified piece of data should trigger checkAlive timeouts and store into indexeddb
-var ChronoChat = function
+var FireChat = function
    (screenName, username, chatroom, hubPrefix, 
     face, keyChain, 
     onChatData, onUserLeave, onUserJoin, updateRoster,
@@ -70,7 +70,6 @@ var ChronoChat = function
   this.checkAliveWaitPeriod = this.heartbeatInterval * 2;
   
   this.chatDataLifetime = 10000;
-
   //this.username = this.screenName + session;
   
   this.usePersistentStorage = usePersistentStorage;
@@ -103,7 +102,7 @@ var ChronoChat = function
         self.face.setCommandSigningInfo(self.keyChain, self.certificateName);
         self.sync = new ChronoSync2013
           (self.sendInterest.bind(self), self.initial.bind(self), self.chatPrefix,
-           (new Name("/ndn/broadcast/ChronoChat-0.3")).append(self.chatroom), self.session,
+           (new Name("/ndn/broadcast/FireChat-0.3")).append(self.chatroom), self.session,
             self.face, self.keyChain, self.certificateName, self.syncLifetime,
             self.onRegisterFailed.bind(self));
       } catch (e) {
@@ -130,7 +129,7 @@ var ChronoChat = function
  * @param {number} interestFilterId
  * @param {InterestFilter} filter
  */
-ChronoChat.prototype.onInterest = function
+FireChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
   var seq = parseInt(interest.getName().get(-1).toEscapedString());
@@ -154,17 +153,17 @@ ChronoChat.prototype.onInterest = function
   }
 };
 
-ChronoChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
+FireChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
 {
   this.onInterest(prefix, interest, face, interestFilterId, filter);
 };
 
-ChronoChat.prototype.onRegisterFailed = function(prefix)
+FireChat.prototype.onRegisterFailed = function(prefix)
 {
   console.log("Register failed for prefix " + prefix.toUri());
 };
 
-ChronoChat.prototype.initial = function()
+FireChat.prototype.initial = function()
 {
   var self = this;
   setTimeout(function () {
@@ -188,22 +187,13 @@ ChronoChat.prototype.initial = function()
 };
 
 /**
- * This onData is passed as onData for timeout interest in initial, which means it
- * should not be called under any circumstances.
- */
-ChronoChat.prototype.dummyOnData = function(interest, data)
-{
-  console.log("*** dummyOndata called, name: " + interest.getName().toUri() + " ***");
-};
-
-/**
  * Send a Chat interest to fetch chat messages after the user gets the Sync data packet
  * @param {SyncStates[]} The array of sync states
  * @param {bool} if it's in recovery state
  *
  * NOTE: for given SyncStates, sendInterest may not send interest for every currently missing sequence numbers: this may not be the expected behavior.
  */
-ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
+FireChat.prototype.sendInterest = function(syncStates, isRecovery)
 {
   this.isRecoverySyncState = isRecovery;
 
@@ -237,9 +227,9 @@ ChronoChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
 };
 
-ChronoChat.prototype.processData = function(interest, data, verified)
+FireChat.prototype.processData = function(interest, data, verified)
 {
-  var content = new ChronoChat.ChatMessage(data.getContent().buf().toString('binary'));
+  var content = new FireChat.ChatMessage(data.getContent().buf().toString('binary'));
   
   // NOTE: this makes assumption about where the names are
   var session = parseInt((data.getName().get(-2)).toEscapedString());
@@ -274,7 +264,7 @@ ChronoChat.prototype.processData = function(interest, data, verified)
   }
 }
 
-ChronoChat.prototype.onData = function(interest, data)
+FireChat.prototype.onData = function(interest, data)
 {
   console.log("Got data: " + data.getName().toUri());
 
@@ -290,17 +280,17 @@ ChronoChat.prototype.onData = function(interest, data)
     });
 };
 
-ChronoChat.prototype.chatTimeout = function(interest)
+FireChat.prototype.chatTimeout = function(interest)
 {
   console.log("Timeout waiting for chat data: " + interest.getName().toUri());
 };
 
-ChronoChat.prototype.heartbeat = function()
+FireChat.prototype.heartbeat = function()
 {
   this.messageCacheAppend("HELLO", "");
 };
 
-ChronoChat.prototype.checkAlive = function(prevSeq, name)
+FireChat.prototype.checkAlive = function(prevSeq, name)
 {
   if (name in this.roster) {
     var seq = this.roster[name].lastReceivedSeq;    
@@ -320,7 +310,7 @@ ChronoChat.prototype.checkAlive = function(prevSeq, name)
   }
 };
 
-ChronoChat.prototype.userLeave = function(username, time, verified)
+FireChat.prototype.userLeave = function(username, time, verified)
 {
   console.log("user leave for " + username);
   if (username in this.roster && username != this.username) {
@@ -341,7 +331,8 @@ ChronoChat.prototype.userLeave = function(username, time, verified)
   }
 };
 
-ChronoChat.prototype.userJoin = function(username, screenName, time, sequenceNo, verified)
+// userJoin or userLeave called by this user passes verified undefined, and should be trusted.
+FireChat.prototype.userJoin = function(username, screenName, time, sequenceNo, verified)
 {
   if (this.onUserJoin !== undefined) {
     this.onUserJoin(screenName, time, "", verified);
@@ -361,7 +352,7 @@ ChronoChat.prototype.userJoin = function(username, screenName, time, sequenceNo,
 /**
  * Intended public facing methods; Join is now called in ChronoSync2013.onInitialized, thus called by ChronoSync2013's constructor instead; 
  */
-ChronoChat.prototype.send = function(msg)
+FireChat.prototype.send = function(msg)
 {
   // NOTE: check if this check should be here
   if (this.msgCache.length == 0)
@@ -369,13 +360,13 @@ ChronoChat.prototype.send = function(msg)
   this.messageCacheAppend("CHAT", msg);
 };
 
-ChronoChat.prototype.leave = function()
+FireChat.prototype.leave = function()
 {
   this.messageCacheAppend("LEAVE", "");
   this.userLeave(this.username, (new Date()).toLocaleTimeString());
 };
 
-ChronoChat.prototype.join = function()
+FireChat.prototype.join = function()
 {
   if (!this.roster.hasOwnProperty(this.username)) {
     this.messageCacheAppend("JOIN", "");
@@ -391,11 +382,11 @@ ChronoChat.prototype.join = function()
  * Also remove elements from the front of the cache as needed to keep the size to
  * this.maxmsgCacheLength.
  */
-ChronoChat.prototype.messageCacheAppend = function(messageType, message)
+FireChat.prototype.messageCacheAppend = function(messageType, message)
 {
   var time = (new Date()).getTime();
   this.sync.publishNextSequenceNo();
-  var content = new ChronoChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time)
+  var content = new FireChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time);
 
   this.msgCache.push(content);
   
@@ -416,7 +407,7 @@ ChronoChat.prototype.messageCacheAppend = function(messageType, message)
   }
 };
 
-ChronoChat.prototype.getRandomString = function()
+FireChat.prototype.getRandomString = function()
 {
   var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789';
   var result = '';
@@ -427,9 +418,9 @@ ChronoChat.prototype.getRandomString = function()
   return result;
 };
 
-ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, fromUsername, fromScreenName, msgType, msg, timestamp)
+FireChat.ChatMessage = function (seqNoOrChatMessageOrEncoding, fromUsername, fromScreenName, msgType, msg, timestamp)
 {
-  if (typeof seqNoOrChatMessageOrEncoding === 'object' && seqNoOrChatMessageOrEncoding instanceof ChronoChat.ChatMessage) {
+  if (typeof seqNoOrChatMessageOrEncoding === 'object' && seqNoOrChatMessageOrEncoding instanceof FireChat.ChatMessage) {
     // Copy constructor
     var chatMessage = seqNoOrChatMessageOrEncoding;
 
@@ -444,7 +435,7 @@ ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, fromUsername, fr
     this.to = "";
   } else if (typeof seqNoOrChatMessageOrEncoding === 'string') {
     // Decode from encoding constructor
-    var encoding = ChronoChat.ChatMessage.decode(seqNoOrChatMessageOrEncoding);
+    var encoding = FireChat.ChatMessage.decode(seqNoOrChatMessageOrEncoding);
     
     this.seqNo = encoding.seqNo;
     this.fromUsername = encoding.fromUsername;
@@ -469,23 +460,12 @@ ChronoChat.ChatMessage = function(seqNoOrChatMessageOrEncoding, fromUsername, fr
   }
 };
 
-ChronoChat.ChatMessage.prototype.encode = function()
+FireChat.ChatMessage.prototype.encode = function()
 {
   return JSON.stringify(this);
 };
 
-ChronoChat.ChatMessage.decode = function(encoding)
+FireChat.ChatMessage.decode = function(encoding)
 {
   return JSON.parse(encoding);
-};
-
-function getRandomNameString()
-{
-  var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM';
-  var result = '';
-  for (var i = 0; i < 3; i++) {
-    var pos = Math.floor(Math.random() * seed.length);
-    result += seed[pos];
-  }
-  return result;
 };
