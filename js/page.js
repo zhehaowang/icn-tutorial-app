@@ -1,12 +1,19 @@
 var chronoChat;
 var screenName = "";
 var username = "";
+var enabled = false;
 
 $(document).ready(function(){
-  $("#email-dialog").dialog({
+  var dialogElement = $("#email-dialog").dialog({
+    title: "Email/Name",
     autoOpen: true,
     buttons: {
       "OK": function() {
+        $(this).dialog('close');
+      }
+    },
+    close: function () {
+      if (!enabled) {
         username = $("#emailInput").val();
         if (username === "") {
           username = getRandomNameString(10);
@@ -17,9 +24,17 @@ $(document).ready(function(){
           screenName = getRandomNameString(3);
         }
 
-        $(this).dialog('close');
         startFireChat();
+      } else {
+        console.log("FireChat already started.");
       }
+    },
+    open: function() {
+      $("#screenNameInput").keyup(function (e) {
+        if (e.keyCode == $.ui.keyCode.ENTER) {
+          dialogElement.dialog('option', 'buttons')['OK'].apply(dialogElement);
+        }
+      });
     }
   });
 });
@@ -100,7 +115,11 @@ function startFireChat()
     sendMessageClick();
   });
 
-  $("#chatTextInput").keyup(checkKey);
+  $("#chatTextInput").keyup(function (e) {
+    if (e.keyCode == $.ui.keyCode.ENTER) {
+      sendMessageClick();
+    }
+  });
   
   // Note: BeforeUnload event may not work in Opera; support in other browsers to be tested, too.
   // if called in unload instead, the Dexie.table.put promise may not have time to finish, thus having LEAVE message not inserted
@@ -111,6 +130,8 @@ function startFireChat()
       console.log(e);
     }
   });
+
+  enabled = true;
 }
 
 function sendMessageClick() {
@@ -159,13 +180,6 @@ function updateRoster(roster) {
     objDiv.innerHTML += '<li>' + roster[name].screenName + '</li>';
   }
   objDiv.innerHTML += '</ul>';
-}
-
-// Enable sending the message by pressing 'Enter'.
-function checkKey(event) {
-  if (event.keyCode == 13) {
-    sendMessageClick();
-  }
 }
 
 function getRandomNameString(len)
