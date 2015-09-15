@@ -154,7 +154,7 @@ commenting and feed of comments
       left: 280px;
       bottom: 0px;
       padding-bottom: 40px;
-      z-index: 900;
+      z-index: 5;
       background: white;
     }
       

@@ -42,6 +42,7 @@
   <link href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
+  <link rel="stylesheet" href="css/jquery-ui.min.css">
   <link rel="stylesheet" href="css/material.min.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -149,6 +150,14 @@
   </button>
 </div>
 
+<!-- Dialog for putting in user email -->
+<div id="email-dialog">
+  Your email address:
+  <input type="text" name="email" id="emailInput"><br>
+  Your screen name:
+  <input type="text" name="screenname" id="screenNameInput"><br>
+ </div>
+
 <!--
   TODO (Signing/Verification): 
   1. Put a modal dialogue to ask the user to put his email
@@ -171,7 +180,7 @@
 
 <script src="js/material.min.js"></script>
 <script src="js/jquery-1.11.3.min.js"></script>
-
+<script src="js/jquery-ui.min.js"></script>
 
 <script src="js/protobuf/long.min.js"></script>
 <script src="js/protobuf/bytebuffer-ab.min.js"></script>

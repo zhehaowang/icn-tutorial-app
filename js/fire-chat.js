@@ -28,17 +28,22 @@ var FireChat = function
     onChatData, onUserLeave, onUserJoin, updateRoster,
     usePersistentStorage, requireVerification)
 {
-  this.screenName = screenName;
   this.chatroom = chatroom;
   this.isRecoverySyncState = true;
   this.face = face;
   this.keyChain = keyChain;
   this.requireVerification = requireVerification;
 
-  if (username === undefined) {
-    this.username = this.getRandomString();
+  if (username === undefined || username === "") {
+    this.username = this.getRandomString(10);
   } else {
     this.username = username;
+  }
+  
+  if (screenName === undefined || screenName === "") {
+    this.screenName = this.getRandomString(3);
+  } else {
+    this.screenName = screenName;
   }
 
   // NOTE: The session number used with the applicationDataPrefix in sync state messages, why is session in sync state messages?
@@ -101,8 +106,8 @@ var FireChat = function
       try {
         self.face.setCommandSigningInfo(self.keyChain, self.certificateName);
         self.sync = new ChronoSync2013
-          (self.sendInterest.bind(self), self.initial.bind(self), self.chatPrefix,
-           (new Name("/ndn/broadcast/FireChat-0.3")).append(self.chatroom), self.session,
+          (self.sendInterest.bind(self), self.initialize.bind(self), self.chatPrefix,
+           (new Name("/ndn/multicast/CHAT/CHANNEL")).append(self.chatroom), self.session,
             self.face, self.keyChain, self.certificateName, self.syncLifetime,
             self.onRegisterFailed.bind(self));
       } catch (e) {
@@ -163,7 +168,7 @@ FireChat.prototype.onRegisterFailed = function(prefix)
   console.log("Register failed for prefix " + prefix.toUri());
 };
 
-FireChat.prototype.initial = function()
+FireChat.prototype.initialize = function()
 {
   var self = this;
   setTimeout(function () {
@@ -407,11 +412,11 @@ FireChat.prototype.messageCacheAppend = function(messageType, message)
   }
 };
 
-FireChat.prototype.getRandomString = function()
+FireChat.prototype.getRandomString = function(len)
 {
   var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789';
   var result = '';
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < len; i++) {
     var pos = Math.floor(Math.random() * seed.length);
     result += seed[pos];
   }
