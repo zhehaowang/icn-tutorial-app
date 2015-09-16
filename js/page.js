@@ -80,7 +80,27 @@ function startFireChat()
   keyChain.setFace(face);
 
   // Hard-coded trust anchor cert encoded as base64 string
-  var trustAnchorBase64 = "Bv0C8Qc4CANuZG4IA29yZwgDaWNuCANLRVkIDmtzay0xNDQxNDE3MzgyCAdJRC1DRVJUCAn9AAABT5srytUUAxgBAhX9AXQwggFwMCIYDzIwMTUwOTA1MDE0MzAyWhgPMjAxNzA5MDQwMTQzMDJaMCQwIgYDVQQpExsvbmRuL29yZy9pY24va3NrLTE0NDE0MTczODIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCt1v/hUxoKdi2epLAUUJElS3HCh5extviDirWJabaVrYY0n2bxeG7H/HimOSU0nfDeqc9aiaXnw0jMlI/gUs+jE2Y7oklp0M8WufCgJxKNjeqTsWJ6/Sy8j9UJA5ZFLut1wbm/0o6aj6nnQG8Ju2cJR/aDO1NjbTNdQf15EBxg2tK9kA4g3TMTc+BabGUoHWqtQdVrk1hGRy6nYhNbgra8NMefVvwHcGP2030WVh74goK90ibbz/jQq06msfHTLZWVgut+i8QeM5zf3vGPYiMz4bY+cYuvbHTzsqslUxv7UzU3arB6L+st7KywkcRydEA+cFF3eN7DwK4XKCHU0fNtAgMBAAEWNBsBARwvBy0IA25kbggDb3JnCANpY24IA0tFWQgOa3NrLTE0NDE0MTczODIIB0lELUNFUlQX/QEAiaL58x2KPtx02T6N6bWGPBcYPVaa8qn/3D/H9bpHPOiMQ8rCvP3iD0BDq/KXfNRxuoHMA41c8LVot4NqK5mCDc9w15WIpmSQ/tbY4XGH9VuS2y2eoEozfV/IT85s6k5iHZkNJl5aEfSBpPaWGuZypa3ovngkOqyYP+WZiAXQbOaYK9jRFL9RYw7WKIFiIxIDe+D0eVqgqmf+Y2YrHy2MrVQXddn4z128umhOZTaedRXv8IUs/rSkmeJVIjVEiaXNZHxd6PsWV5qDQFqx7caEjEjZlKXvDrNznk6gQ2TBfJAcdPc5/2xvwaJlFy2+LeR/dJgK5MQ9MCBAPXgFuNaheg==";
+  // My in-browser test anchor
+  //var trustAnchorBase64 = "Bv0C8Qc4CANuZG4IA29yZwgDaWNuCANLRVkIDmtzay0xNDQxNDE3MzgyCAdJRC1DRVJUCAn9AAABT5srytUUAxgBAhX9AXQwggFwMCIYDzIwMTUwOTA1MDE0MzAyWhgPMjAxNzA5MDQwMTQzMDJaMCQwIgYDVQQpExsvbmRuL29yZy9pY24va3NrLTE0NDE0MTczODIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCt1v/hUxoKdi2epLAUUJElS3HCh5extviDirWJabaVrYY0n2bxeG7H/HimOSU0nfDeqc9aiaXnw0jMlI/gUs+jE2Y7oklp0M8WufCgJxKNjeqTsWJ6/Sy8j9UJA5ZFLut1wbm/0o6aj6nnQG8Ju2cJR/aDO1NjbTNdQf15EBxg2tK9kA4g3TMTc+BabGUoHWqtQdVrk1hGRy6nYhNbgra8NMefVvwHcGP2030WVh74goK90ibbz/jQq06msfHTLZWVgut+i8QeM5zf3vGPYiMz4bY+cYuvbHTzsqslUxv7UzU3arB6L+st7KywkcRydEA+cFF3eN7DwK4XKCHU0fNtAgMBAAEWNBsBARwvBy0IA25kbggDb3JnCANpY24IA0tFWQgOa3NrLTE0NDE0MTczODIIB0lELUNFUlQX/QEAiaL58x2KPtx02T6N6bWGPBcYPVaa8qn/3D/H9bpHPOiMQ8rCvP3iD0BDq/KXfNRxuoHMA41c8LVot4NqK5mCDc9w15WIpmSQ/tbY4XGH9VuS2y2eoEozfV/IT85s6k5iHZkNJl5aEfSBpPaWGuZypa3ovngkOqyYP+WZiAXQbOaYK9jRFL9RYw7WKIFiIxIDe+D0eVqgqmf+Y2YrHy2MrVQXddn4z128umhOZTaedRXv8IUs/rSkmeJVIjVEiaXNZHxd6PsWV5qDQFqx7caEjEjZlKXvDrNznk6gQ2TBfJAcdPc5/2xvwaJlFy2+LeR/dJgK5MQ9MCBAPXgFuNaheg==";
+  
+  // ICN cert test anchor
+  var trustAnchorBase64 = "Bv0DEQdBCANuZG4IA29yZwgDaWNuCARVU0VSCANLRVkIEWtzay0xNDQyMzc0MTcz\
+ODk4CAdJRC1DRVJUCAn9AAABT9Q1jfwUCRgBAhkEADbugBX9AXwwggF4MCIYDzIw\
+MTUwOTE2MDMzMjAzWhgPMjAzNTA5MTEwMzMyMDNaMCwwKgYDVQQpEyMvbmRuL29y\
+Zy9pY24vVVNFUi9rc2stMTQ0MjM3NDE3Mzg5ODCCASIwDQYJKoZIhvcNAQEBBQAD\
+ggEPADCCAQoCggEBALNdLoGnKHT+6YVW24MqHT3zMICgrlD+YmcASLrpMrFJ0oMO\
+R4glXPefaVAjvaQmxwNUriOxCaD/PmrudPgCPykrRlSL0hFYTevCjRfMD+jDJMs1\
+RkEo37q6i252f7v4dpYUlz96fSqEC712YxsJ9Vh0mbaYtKGQQou0+lVewR0KQbQJ\
+S88Lyi/Vj6xWGxEaHAyHSPGKKip0EMehkqxegpi+Br9UGPDzNMB3OXeNuERcrcMS\
+7z+qI+hgWoJAEvF7o4pEMYHkDRC6Y7JX751WCTyWiEKouIC4xrQEv6Xq70A+6xma\
+Paxx4QX66ZZ6T+bbulAZj+8bc0EApRuRmRrOqwkCAwEAARY9GwEBHDgHNggDbmRu\
+CANvcmcIA2ljbggEVVNFUggDS0VZCBFrc2stMTQ0MjM3NDE3Mzg5OAgHSUQtQ0VS\
+VBf9AQChD7qJasfM2pLWRNY4Uz/GfsZzYJEOQy5h9QaTNAAW3vxBg5PM3UO7joNy\
+xdV1bUho5iQgutg3dLPr3NgG7sPuAjMGVoXxAKOgCEulluc0MV2zwNdjw/7ywp47\
+9TbDb/ysSfFi2oOV95Y/h8hZJvTRoud8mwc6LyeLsdkWbeYOe6BpIB9Bga4Uvn+P\
+glaBoEwaWwOvBfvmPDwccOr22o9JVqbiWRi/ICULJ7uZUZye82LoCTgaoQqlna6F\
+UTWfKrVhIhZFokinwHeDDtEw8rQrzCW5kAvcPb7CeFZzhFB5PH7b/f0n2ig6iLFh\
+ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 
   var policy =
     "validator"                   + "\n" +
@@ -143,8 +163,11 @@ function startFireChat()
     var signedCertString = $("#signedCertString").val();
     var certificate = new IdentityCertificate();
     certificate.wireDecode(new Buffer(signedCertString, "base64"));
-    chronoChat.keyChain.installIdentityCertificate(certificate).then(function() {
-      console.log("cert ready");
+    chronoChat.keyChain.installIdentityCertificate(certificate, function() {
+      console.log("Cert installation ready.");
+      if (installCertDialog.dialog("isOpen")) {
+        installCertDialog.dialog("close");
+      }
     });
   });
 
