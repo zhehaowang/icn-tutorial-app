@@ -124,6 +124,8 @@ var FireChat = function
       }
     }
   });
+
+  this.heartbeatEvent = undefined;
 };
 
 /**
@@ -169,9 +171,10 @@ FireChat.prototype.onRegisterFailed = function(prefix)
 FireChat.prototype.initialize = function()
 {
   var self = this;
-  setTimeout(function () {
-    setInterval(self.heartbeat.bind(self), self.heartbeatInterval);
+  this.heartbeatEvent = setTimeout(function () {
+    self.heartbeat();
   }, self.heartbeatInterval);
+
   // Note: alternatively, let user call join, need changes in the library, so that initial interest is not expressed in constructor, but in a "start" function instead
 
   // Display the persistently stored local messages
@@ -391,6 +394,8 @@ FireChat.prototype.send = function(msg)
   if (this.msgCache.length == 0)
     this.messageCacheAppend("JOIN", "");
   this.messageCacheAppend("CHAT", msg);
+
+
 };
 
 FireChat.prototype.leave = function()
@@ -434,10 +439,19 @@ FireChat.prototype.messageCacheAppend = function(messageType, message)
       self.chatStorage.add(data);
     });
   }
+  
+  if (this.heartbeatEvent !== undefined) {
+    clearTimeout(this.heartbeatEvent);
+  }
 
   while (this.msgCache.length > this.maxmsgCacheLength) {
     this.msgCache.shift();
   }
+
+  var self = this;
+  this.heartbeatEvent = setTimeout(function () {
+    self.heartbeat();
+  }, this.heartbeatInterval);
 };
 
 FireChat.prototype.getRandomString = function(len)
