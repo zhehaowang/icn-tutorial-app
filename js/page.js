@@ -86,8 +86,8 @@ $(document).ready(function(){
 function startFireChat()
 {
   var hubPrefix = "/ndn/org/icn/USER";
-  var chatroom = "more";
-  var hostName = "localhost";
+  var chatroom = "test-channel";
+  var hostName = "memoria.ndn.ucla.edu";
 
   var face = new Face({host: hostName});
   var identityStorage = new IndexedDbIdentityStorage();
@@ -103,7 +103,8 @@ function startFireChat()
   // My in-browser test anchor
   //var trustAnchorBase64 = "Bv0C8Qc4CANuZG4IA29yZwgDaWNuCANLRVkIDmtzay0xNDQxNDE3MzgyCAdJRC1DRVJUCAn9AAABT5srytUUAxgBAhX9AXQwggFwMCIYDzIwMTUwOTA1MDE0MzAyWhgPMjAxNzA5MDQwMTQzMDJaMCQwIgYDVQQpExsvbmRuL29yZy9pY24va3NrLTE0NDE0MTczODIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCt1v/hUxoKdi2epLAUUJElS3HCh5extviDirWJabaVrYY0n2bxeG7H/HimOSU0nfDeqc9aiaXnw0jMlI/gUs+jE2Y7oklp0M8WufCgJxKNjeqTsWJ6/Sy8j9UJA5ZFLut1wbm/0o6aj6nnQG8Ju2cJR/aDO1NjbTNdQf15EBxg2tK9kA4g3TMTc+BabGUoHWqtQdVrk1hGRy6nYhNbgra8NMefVvwHcGP2030WVh74goK90ibbz/jQq06msfHTLZWVgut+i8QeM5zf3vGPYiMz4bY+cYuvbHTzsqslUxv7UzU3arB6L+st7KywkcRydEA+cFF3eN7DwK4XKCHU0fNtAgMBAAEWNBsBARwvBy0IA25kbggDb3JnCANpY24IA0tFWQgOa3NrLTE0NDE0MTczODIIB0lELUNFUlQX/QEAiaL58x2KPtx02T6N6bWGPBcYPVaa8qn/3D/H9bpHPOiMQ8rCvP3iD0BDq/KXfNRxuoHMA41c8LVot4NqK5mCDc9w15WIpmSQ/tbY4XGH9VuS2y2eoEozfV/IT85s6k5iHZkNJl5aEfSBpPaWGuZypa3ovngkOqyYP+WZiAXQbOaYK9jRFL9RYw7WKIFiIxIDe+D0eVqgqmf+Y2YrHy2MrVQXddn4z128umhOZTaedRXv8IUs/rSkmeJVIjVEiaXNZHxd6PsWV5qDQFqx7caEjEjZlKXvDrNznk6gQ2TBfJAcdPc5/2xvwaJlFy2+LeR/dJgK5MQ9MCBAPXgFuNaheg==";
   
-  // ICN cert test anchor, identity /ndn/org/icn/USER on my machine
+  // identity /ndn/org/icn/USER on my machine
+  /*
   var trustAnchorBase64 = "Bv0DEQdBCANuZG4IA29yZwgDaWNuCARVU0VSCANLRVkIEWtzay0xNDQyMzc0MTcz\
 ODk4CAdJRC1DRVJUCAn9AAABT9Q1jfwUCRgBAhkEADbugBX9AXwwggF4MCIYDzIw\
 MTUwOTE2MDMzMjAzWhgPMjAzNTA5MTEwMzMyMDNaMCwwKgYDVQQpEyMvbmRuL29y\
@@ -121,6 +122,25 @@ xdV1bUho5iQgutg3dLPr3NgG7sPuAjMGVoXxAKOgCEulluc0MV2zwNdjw/7ywp47\
 glaBoEwaWwOvBfvmPDwccOr22o9JVqbiWRi/ICULJ7uZUZye82LoCTgaoQqlna6F\
 UTWfKrVhIhZFokinwHeDDtEw8rQrzCW5kAvcPb7CeFZzhFB5PH7b/f0n2ig6iLFh\
 ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
+  */
+  // identity /ndn/org/icn/USER on memoria
+  var trustAnchorBase64 = "Bv0DCQdBCANuZG4IA29yZwgDaWNuCARVU0VSCANLRVkIEWtzay0xNDQyNDQzMTE4\
+OTQ0CAdJRC1DRVJUCAn9AAABT9hPSiMUAxgBAhX9AXowggF2MCIYDzIwMTUwOTE2\
+MjIzODM5WhgPMjAzNTA5MTEyMjM4MzlaMCwwKgYDVQQpEyMvbmRuL29yZy9pY24v\
+VVNFUi9rc2stMTQ0MjQ0MzExODk0NDCCASAwDQYJKoZIhvcNAQEBBQADggENADCC\
+AQgCggEBAMC6eWt52LCeAGJIO659+y6Rt57x0uM/rmRvYf3WBtXRL1jts5Y/Lb8F\
+g6s6IzYBbC8R0ugE8wiR65tVLAuOJ4+ReCPFwqMGEVSS93WSuePdavZZm9FNMKrM\
+Kv8lrOHTiWL+N2YA2ewueOVnYZAlTkEgIwFFTBjbOeQkr3Y16pp5p8gaivUCQaNd\
+Dz+GNRku9RYlR76gsDJUXChMGj/zAeabUOFPtdmNbOGNREeatNcyuo7O9hrACxU0\
+piEFH9IImGJVarDHYig5w2rKhMlk+tdsMYREiSnP+TJ9cgah643t73Gy10KEzfLR\
+Q3IE2GviVja3OTWMs5NlEKgj62u4N3UCAREWPRsBARw4BzYIA25kbggDb3JnCANp\
+Y24IBFVTRVIIA0tFWQgRa3NrLTE0NDI0NDMxMTg5NDQIB0lELUNFUlQX/QEAEzBJ\
+rkn0MLetlEbgGioSW/9bXBemyeOiIfERgTZWvGpncbnlmdlisVgw7+r9KjNd3V95\
+DJKLASqRSWlENsLve1g7+0FR/jLanlcYLE9NfnjrQzR2MJijm+pgukI8vWRQrVyJ\
+zotUbRGUOAIcP+e3t7hfPkWaiWiyc9VjlMxgUfLZ8XnsgLS9B/YpOwwthd+9TkCT\
+yc74j3bHKKCFbAvUhpAL4EU8BKKMzi/hISwXn0uKOiQJbWVAWPTqGeYsY4MT8H/N\
+iAalVkewK+ASymdOFCDHHK8hIFXHgb3Gi7Kuk8onEcn/EDV6SiAvWdKsWdBmrISe\
+/fM8rdricpFmE1bUhA=="
 
   var policy =
     "validator"                   + "\n" +
