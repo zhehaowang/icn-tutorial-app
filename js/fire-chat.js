@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014-2015 Regents of the University of California.
- * @author: Zhehao Wang
+ * @author: Zhehao Wang <zhehao@remap.ucla.edu>
  * @author: Jeff Thompson <jefft0@remap.ucla.edu>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,23 @@
  * A copy of the GNU Lesser General Public License is in the file COPYING.
  */
 
-// TODO: Test if my ChronoSync lib handles recovery correctly.
-
-// NOTE: constructor now takes the actual username as a parameter
-// requireVerification decides whether a unverified piece of data should trigger checkAlive timeouts and store into indexeddb
+/**
+ * FireChat constructor, user joins chatroom after successful initialization
+ * @param {String} screenName The nickname of the chat user that's displayed 
+ * on the screen. A 3-character random string is used if undefined
+ * @param {String} username The username that the user publishes chat data with; 
+ * In the tutorial's case it's the user's email. A 10-character string is used 
+ * if undefined.
+ * @param {String} chatroom The name of the chatroom/channel
+ * @param {String} hubPrefix The prefix of the user's chat data name
+ * @param {Face} face The app's face that traffic goes through
+ * @param {KeyChain} keyChain The keychain handles signing/verification
+ * @param {Function} onChatData, onUserLeave, onUserJoin, updateRoster; UI callbacks
+ * @param {Bool} usePersistentStorage Set true for this app to use an indexeddb
+ * based persistent chat data storage; defaults to False
+ * @param {Bool} requireVerification Set true for this app to ignore unverified
+ * sync messages; defaults to False
+ */
 var FireChat = function
    (screenName, username, chatroom, hubPrefix, 
     face, keyChain, 
@@ -90,7 +103,8 @@ var FireChat = function
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
   this.updateRoster = updateRoster;  
-
+  
+  // Create identity and certificate if not already exist; Start sync upon successful creation
   this.certBase64String = "";
 
   var self = this;
@@ -101,7 +115,7 @@ var FireChat = function
     self.certificateName = myCertificateName;
 
     if (self.screenName == "" || self.chatroom == "") {
-      console.log("input username and chatroom");
+      console.log("input user screen name and chatroom");
     } else {
       try {
         self.face.setCommandSigningInfo(self.keyChain, self.certificateName);
@@ -132,10 +146,10 @@ var FireChat = function
 };
 
 /**
- * Send the data packet which contains the user's message
- * @param {Name} Interest name prefix
- * @param {Interest} The interest
- * @param {Face} The face
+ * Process received interest for chat data.
+ * @param {Name} prefix
+ * @param {Interest} interest
+ * @param {Face} face
  * @param {number} interestFilterId
  * @param {InterestFilter} filter
  */
@@ -161,16 +175,22 @@ FireChat.prototype.onInterest = function
   }
 };
 
-FireChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
-{
-  this.onInterest(prefix, interest, face, interestFilterId, filter);
-};
-
 FireChat.prototype.onRegisterFailed = function(prefix)
 {
   console.log("Register failed for prefix " + prefix.toUri());
 };
 
+/**
+ * Pass the interest to the application's in-memory cache if persistent storage's enabled and data's not found
+ */
+FireChat.prototype.onPersistentDataNotFound = function(prefix, interest, face, interestFilterId, filter)
+{
+  this.onInterest(prefix, interest, face, interestFilterId, filter);
+};
+
+/**
+ * ChronoSync2013 onInitialize function; called after the first sync interest gets data back, or times out.
+ */
 FireChat.prototype.initialize = function()
 {
   var self = this;
@@ -180,7 +200,7 @@ FireChat.prototype.initialize = function()
 
   // Note: alternatively, let user call join, need changes in the library, so that initial interest is not expressed in constructor, but in a "start" function instead
 
-  // Display the persistently stored local messages
+  // Loads display the persistently stored local messages, sorted by timestamp upon message reception.
   var self = this;
   if (this.usePersistentStorage) {
     this.chatStorage.database.messages.toCollection().sortBy("timestamp", function(array) {
@@ -194,25 +214,15 @@ FireChat.prototype.initialize = function()
     }).catch(function(error) {
       console.log(error);
     });
-/* Load all history without sorting */
-/*
-    this.chatStorage.database.messages.each(function(item, cursor){
-      var data = new Data();
-      data.wireDecode(new Blob(item.content));
-      self.onData(undefined, data);
-    }).then(function() {
-      self.join();
-    });
-*/
   } else {
     this.join();
   }
 };
 
 /**
- * Send a Chat interest to fetch chat messages after the user gets the Sync data packet
- * @param {SyncStates[]} The array of sync states
- * @param {bool} if it's in recovery state
+ * ChronoSync2013 onReceivedSyncStates callback; Send chat interests to fetch missing chat sequences.
+ * @param {SyncStates[]} syncStates The array of sync states
+ * @param {bool} isRecovery If it's in recovery state
  *
  * NOTE: for given SyncStates, sendInterest may not send interest for every currently missing sequence numbers: this may not be the expected behavior.
  */
@@ -256,6 +266,14 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
 };
 
+/**
+ * KeyChain onVerified and onVerifyFailed callback. Processes the received chat data
+ * @param {Interest}
+ * @param {Data}
+ * @param {Bool} verified Set true if data's successfully verified
+ * @param {Bool} updatePersistentStorage Set true or undefined if called by receiving data from face; false if called from persistentStorage traversal
+ * @param {Number} onDataTimestamp The timestamp of data upon its reception
+ */
 FireChat.prototype.processData = function(interest, data, verified, updatePersistentStorage, onDataTimestamp)
 {
   var content = new FireChat.ChatMessage(data.getContent().buf().toString('binary'));
@@ -302,6 +320,13 @@ FireChat.prototype.processData = function(interest, data, verified, updatePersis
   }
 }
 
+/**
+ * OnData callback for prefix registration
+ * @param {Interest}
+ * @param {Data}
+ * @param {Bool} updatePersistentStorage Set true or undefined if called by receiving data from face; false if called from persistentStorage traversal
+ * @param {Number} onDataTimestamp The timestamp of data upon its reception
+ */
 FireChat.prototype.onData = function(interest, data, updatePersistentStorage, onDataTimestamp)
 {
   console.log("Got data: " + data.getName().toUri());
@@ -323,16 +348,31 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
     });
 };
 
+/**
+ * Timeout callback for chat data
+ * TODO: re-express interest if data times out
+ */
 FireChat.prototype.chatTimeout = function(interest)
 {
   console.log("Timeout waiting for chat data: " + interest.getName().toUri());
 };
 
+/**
+ * Heartbeat function pushes HELLO type to message content cache and publishes new sync state; 
+ * It's called every this.heartbeatInterval milliseconds since the last send() call
+ */
 FireChat.prototype.heartbeat = function()
 {
   this.messageCacheAppend("HELLO", "");
 };
 
+/**
+ * CheckAlive loops through current roster to find inactive participants
+ * It's called this.checkAliveWaitPeriod milliseconds after the last onData() call of this participant (identified by username + session)
+ * @param {Number} prevSeq Previous sequence number
+ * @param {String} username
+ * @param {String} session
+ */
 FireChat.prototype.checkAlive = function(prevSeq, name, session)
 {
   var userFullName = name + session;
@@ -344,6 +384,13 @@ FireChat.prototype.checkAlive = function(prevSeq, name, session)
   }
 };
 
+/**
+ * Handles self, or other user's leave; called from processData, checkAlive, or this user's leave
+ * @param {String} username
+ * @param {String} session
+ * @param {Number} time
+ * @param {Bool} verified Undefined if called from checkAlive, or this user's leave
+ */
 FireChat.prototype.userLeave = function(username, session, time, verified)
 {
   console.log("user leave for " + username + session);
@@ -367,7 +414,15 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
   }
 };
 
-// userJoin or userLeave called by this user passes verified undefined, and should be trusted.
+/**
+ * Handles self, or other user's join; called from processData, or this user's join
+ * @param {String} username
+ * @param {String} session
+ * @param {String} screenName
+ * @param {Number} time
+ * @param {Number} sequenceNo The sequence number of this join messages, used for lastReceivedSeq record in roster
+ * @param {Bool} verified Undefined if called from this user's join
+ */
 FireChat.prototype.userJoin = function(username, session, screenName, time, sequenceNo, verified)
 {
   if (this.onUserJoin !== undefined) {
@@ -389,7 +444,13 @@ FireChat.prototype.userJoin = function(username, session, screenName, time, sequ
 };
 
 /**
- * Intended public facing methods; Join is now called in ChronoSync2013.onInitialized, thus called by ChronoSync2013's constructor instead; 
+ * Intended public facing methods; 
+ * Though join is now called in ChronoSync2013.onInitialized, thus called by FireChat's constructor instead; 
+ */
+
+/**
+ * Append a message to the message cache, and publish new sync state upon calling
+ * @param {String} msg The message to send
  */
 FireChat.prototype.send = function(msg)
 {
@@ -401,12 +462,18 @@ FireChat.prototype.send = function(msg)
   onChatData(this.screenName, (new Date()).getTime(), msg);
 };
 
+/**
+ * This user's leave; not called for now.
+ */
 FireChat.prototype.leave = function()
 {
   this.messageCacheAppend("LEAVE", "");
   this.userLeave(this.username, this.session, (new Date()).getTime());
 };
 
+/**
+ * This user's leave; called automatically in constructor for now.
+ */
 FireChat.prototype.join = function()
 {
   var userFullName = this.username + this.session;
@@ -419,10 +486,9 @@ FireChat.prototype.join = function()
 };
 
 /**
- * Append a new ChatMessage to msgCache, using given messageType and message,
- * the sequence number from this.sync.getSequenceNo() and the current time.
- * Also remove elements from the front of the cache as needed to keep the size to
- * this.maxmsgCacheLength.
+ * Append a new ChatMessage to msgCache
+ * @param {String} messageType The type of this message
+ * @param {String} message The message to append
  */
 FireChat.prototype.messageCacheAppend = function(messageType, message)
 {
@@ -457,6 +523,9 @@ FireChat.prototype.messageCacheAppend = function(messageType, message)
   }, this.heartbeatInterval);
 };
 
+/**
+ * Helper function
+ */
 FireChat.prototype.getRandomString = function(len)
 {
   var seed = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789';
@@ -468,6 +537,15 @@ FireChat.prototype.getRandomString = function(len)
   return result;
 };
 
+/**
+ * ChatMessage embedded class that encapsulates a chat message; handles encode/decode in JSON
+ * @param {Number | ChatMessage | string} seqNoOrChatMessageOrEncoding The sequence number; ChatMessage object; or string after JSON encoding
+ * @param {String} fromUsername The username of the message's source
+ * @param {String} fromScreenName The screenName of the message's source
+ * @param {String} msgType The type of this message
+ * @param {String} msg The message
+ * @param {Number} timestamp The source timestamp of this message
+ */
 FireChat.ChatMessage = function (seqNoOrChatMessageOrEncoding, fromUsername, fromScreenName, msgType, msg, timestamp)
 {
   if (typeof seqNoOrChatMessageOrEncoding === 'object' && seqNoOrChatMessageOrEncoding instanceof FireChat.ChatMessage) {
