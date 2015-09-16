@@ -181,8 +181,7 @@ FireChat.prototype.initialize = function()
       for (var i = 0; i < array.length; i++) {
         var data = new Data();
         data.wireDecode(new Blob(array[i].content));
-        self.onData(undefined, data, false);
-        console.log(array[i].timestamp);
+        self.onData(undefined, data, false, array[i].timestamp);
       }
     }).then(function(result) {
       self.join();
@@ -251,7 +250,7 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
 };
 
-FireChat.prototype.processData = function(interest, data, verified, updatePersistentStorage)
+FireChat.prototype.processData = function(interest, data, verified, updatePersistentStorage, onDataTimestamp)
 {
   var content = new FireChat.ChatMessage(data.getContent().buf().toString('binary'));
   
@@ -262,27 +261,32 @@ FireChat.prototype.processData = function(interest, data, verified, updatePersis
   var userFullName = name + session;
 
   if (verified || !this.requireVerification) {
-    if (!(userFullName in this.roster) && content.msgType != "LEAVE") {
-      this.userJoin(name, session, content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString(), seqNo, verified);
-      this.roster[userFullName].lastReceivedSeq = seqNo;
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
-    } else if (this.roster[userFullName].lastReceivedSeq < seqNo) {
-      this.roster[userFullName].lastReceivedSeq = seqNo;
-      // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
-      if (this.roster[userFullName].checkAliveEvent !== undefined) {
+    if (content.msgType === "LEAVE") {
+      if ((userFullName in this.roster) && this.roster[userFullName].checkAliveEvent !== undefined) {
         clearTimeout(this.roster[userFullName].checkAliveEvent);
       }
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
-    }
+      this.userLeave(name, session, onDataTimestamp, verified);
+    } else {
+      if (!(userFullName in this.roster)) {
+        this.userJoin(name, session, content.fromScreenName, onDataTimestamp, seqNo, verified);
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
+      } else if (this.roster[userFullName].lastReceivedSeq < seqNo) {
+        this.roster[userFullName].lastReceivedSeq = seqNo;
+        // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
+        if (this.roster[userFullName].checkAliveEvent !== undefined) {
+          clearTimeout(this.roster[userFullName].checkAliveEvent);
+        }
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
+      }
+      // we don't schedule a checkAlive event, if chat data arrived out-of-order
+    } 
   }
 
   if (content.msgType == "CHAT"){
     var escaped_msg = $('<div/>').text(content.data).html();
     if (this.onChatData !== undefined) {
-      this.onChatData(content.fromScreenName, (new Date(content.timestamp)).toLocaleTimeString(), escaped_msg, verified);
+      this.onChatData(content.fromScreenName, onDataTimestamp, escaped_msg, verified);
     }
-  } else if (content.msgType == "LEAVE") {
-    this.userLeave(name, session, (new Date(content.timestamp)).toLocaleTimeString(), verified);
   }
   
   // Note: we store verified chat data into persistent storage only; old condition: (verified || !this.requireVerification)
@@ -292,21 +296,24 @@ FireChat.prototype.processData = function(interest, data, verified, updatePersis
   }
 }
 
-FireChat.prototype.onData = function(interest, data, updatePersistentStorage)
+FireChat.prototype.onData = function(interest, data, updatePersistentStorage, onDataTimestamp)
 {
   console.log("Got data: " + data.getName().toUri());
   if (updatePersistentStorage === undefined) {
     updatePersistentStorage = true;
   }
+  if (onDataTimestamp === undefined) {
+    onDataTimestamp = (new Date()).getTime();
+  }
   var self = this;
   this.keyChain.verifyData(data, 
     function () {
       console.log("Data verified.");
-      self.processData(interest, data, true, updatePersistentStorage);
+      self.processData(interest, data, true, updatePersistentStorage, onDataTimestamp);
     },
     function () {
       console.log("Data verify failed.");
-      self.processData(interest, data, false, updatePersistentStorage);
+      self.processData(interest, data, false, updatePersistentStorage, onDataTimestamp);
     });
 };
 
@@ -323,11 +330,10 @@ FireChat.prototype.heartbeat = function()
 FireChat.prototype.checkAlive = function(prevSeq, name, session)
 {
   var userFullName = name + session;
-  console.log("checkAlive for " + userFullName);
   if (userFullName in this.roster) {
     var seq = this.roster[userFullName].lastReceivedSeq;
     if (prevSeq == seq) {
-      this.userLeave(name, session, (new Date()).toLocaleTimeString());
+      this.userLeave(name, session, (new Date()).getTime());
     }
   }
 };
@@ -390,7 +396,7 @@ FireChat.prototype.send = function(msg)
 FireChat.prototype.leave = function()
 {
   this.messageCacheAppend("LEAVE", "");
-  this.userLeave(this.username, this.session, (new Date()).toLocaleTimeString());
+  this.userLeave(this.username, this.session, (new Date()).getTime());
 };
 
 FireChat.prototype.join = function()
@@ -398,7 +404,7 @@ FireChat.prototype.join = function()
   var userFullName = this.username + this.session;
   if (!(userFullName in this.roster)) {
     this.messageCacheAppend("JOIN", "");
-    this.userJoin(this.username, this.session, this.screenName, (new Date()).toLocaleTimeString());
+    this.userJoin(this.username, this.session, this.screenName, (new Date()).getTime());
   } else {
     console.log("Error: chat roster has this user's username");
   }

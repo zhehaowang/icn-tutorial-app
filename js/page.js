@@ -137,9 +137,7 @@ function startFireChat()
 function sendMessageClick() {
   var chatMsg = $("#chatTextInput").val();
   if (chatMsg != "") {
-
-    var date = new Date();
-    var time = date.toLocaleTimeString();
+    var time = (new Date()).getTime();
     // Encode special html characters to avoid script injection.
     var escaped_msg = $('<div/>').text(chatMsg).html();
 
@@ -158,18 +156,35 @@ function sendMessageClick() {
  * @param msg
  */
 function onUserLeave(from, time, msg, verified) {
-  var objDiv = document.getElementById("chatDisplayDiv");
-  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Leave</p>';
+  var para = document.createElement("P");
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Leave';
+  para.onDataTimestamp = time;
+  appendElement(para);
 }
 
 function onChatData(from, time, msg, verified) {
-  var objDiv = document.getElementById("chatDisplayDiv");
-  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span><br>' + msg + '</p>';
+  var para = document.createElement("P");
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
+  para.onDataTimestamp = time;
+  appendElement(para);
 }
 
 function onUserJoin(from, time, msg, verified) {
+  var para = document.createElement("P");
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Join';
+  para.onDataTimestamp = time;
+  appendElement(para);
+}
+
+function appendElement(para) {
   var objDiv = document.getElementById("chatDisplayDiv");
-  objDiv.innerHTML += '<p><span>' + from + '-' + time + '</span>: Join</p>';
+  for (var i = 0; i < objDiv.children.length; i++) {
+    if (para.onDataTimestamp < objDiv.children[i].onDataTimestamp) {
+      objDiv.insertBefore(para, objDiv.children[i]);
+      return;
+    }
+  }
+  objDiv.appendChild(para);
 }
 
 function updateRoster(roster) {
