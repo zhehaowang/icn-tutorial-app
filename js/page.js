@@ -109,7 +109,7 @@ function startFireChat()
   policyManager.load(policy, "chat-policy");
 
   chronoChat = new FireChat
-    (screenName, username, chatroom, hubPrefix, face, keyChain, onChatData, onUserLeave, onUserJoin, updateRoster, false, false);
+    (screenName, username, chatroom, hubPrefix, face, keyChain, onChatData, onUserLeave, onUserJoin, updateRoster, true, false);
 
   $("#chatBtn").click(function () {
     sendMessageClick();

@@ -23,18 +23,22 @@ var IndexedDbChatStorage = function IndexedDbChatStorage(dbName, face)
 
 /**
  * IndexedDbChatStorage tries to provide an interface similar to that of memoryContentCache
+ * NOTE: this add adds a timestamp used specifically for chat app, may want to change that.
  */
 IndexedDbChatStorage.prototype.add = function(data, onAdd) 
 {
   // In Firefox, transaction not complete error occurs onPageReload; said to be fixed in Firefox 41
   // https://bugzilla.mozilla.org/show_bug.cgi?id=1147942
   var content = new Blob(data.wireEncode()).buf();
-  this.database.messages.put({"name": data.getName().toUri(), "content": content}).then(function(param) {
+
+  this.database.messages.put({"name": data.getName().toUri(), "content": content, "timestamp": (new Date()).getTime()}).then(function(param) {
     //console.log("Appended content " + data.getContent().toString());
     // TODO: look up param list for the then of the promise returned by put
     if (onAdd !== undefined) {
       onAdd(param);
     }
+  }).catch(function (error) {
+    console.log(error);
   });
 };
 
