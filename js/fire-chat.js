@@ -395,7 +395,7 @@ FireChat.prototype.send = function(msg)
     this.messageCacheAppend("JOIN", "");
   this.messageCacheAppend("CHAT", msg);
 
-
+  onChatData(this.screenName, (new Date()).getTime(), msg);
 };
 
 FireChat.prototype.leave = function()

@@ -122,9 +122,13 @@ html, body {
   margin-right: 32px;
 }
 
+.verified {
+  
+}
 
-
-
+.unverified {
+  color: #CCBBCC;
+}
 
 
 

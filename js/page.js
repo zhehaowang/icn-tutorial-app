@@ -137,11 +137,8 @@ function startFireChat()
 function sendMessageClick() {
   var chatMsg = $("#chatTextInput").val();
   if (chatMsg != "") {
-    var time = (new Date()).getTime();
     // Encode special html characters to avoid script injection.
     var escaped_msg = $('<div/>').text(chatMsg).html();
-
-    onChatData(screenName, time, escaped_msg);
 
     chronoChat.send(escaped_msg);
     $("#chatTextInput").val("");
@@ -157,6 +154,12 @@ function sendMessageClick() {
  */
 function onUserLeave(from, time, msg, verified) {
   var para = document.createElement("P");
+  // verified undefined meaning it comes from self
+  var additionalClass = "verified";
+  if (verified === false) {
+    additionalClass = "unverified";
+  }
+  $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Leave';
   para.onDataTimestamp = time;
   appendElement(para);
@@ -164,6 +167,12 @@ function onUserLeave(from, time, msg, verified) {
 
 function onChatData(from, time, msg, verified) {
   var para = document.createElement("P");
+  // verified undefined meaning it comes from self
+  var additionalClass = "verified";
+  if (verified === false) {
+    additionalClass = "unverified";
+  }
+  $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
   para.onDataTimestamp = time;
   appendElement(para);
@@ -171,6 +180,12 @@ function onChatData(from, time, msg, verified) {
 
 function onUserJoin(from, time, msg, verified) {
   var para = document.createElement("P");
+  // verified undefined meaning it comes from self
+  var additionalClass = "verified";
+  if (verified === false) {
+    additionalClass = "unverified";
+  }
+  $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Join';
   para.onDataTimestamp = time;
   appendElement(para);
