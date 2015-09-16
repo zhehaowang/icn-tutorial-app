@@ -91,14 +91,14 @@ var FireChat = function
   this.onUserJoin = onUserJoin;
   this.updateRoster = updateRoster;  
 
-  //this.chatStorage.delete();
+  this.certBase64String = "";
 
   var self = this;
   this.keyChain.createIdentityAndCertificate
-    (this.identityName, function(myCertficateName) {
-    console.log("myCertficateName: " + myCertficateName.toUri());
+    (this.identityName, function(myCertificateName) {
+    console.log("myCertificateName: " + myCertificateName.toUri());
 
-    self.certificateName = myCertficateName;
+    self.certificateName = myCertificateName;
 
     if (self.screenName == "" || self.chatroom == "") {
       console.log("input username and chatroom");
@@ -123,6 +123,9 @@ var FireChat = function
            self.onRegisterFailed.bind(self));
       }
     }
+    self.keyChain.getIdentityManager().identityStorage.getCertificatePromise(myCertificateName, true).then(function(certificate) {
+      self.certBase64String = certificate.wireEncode().buf().toString('base64');
+    });
   });
 
   this.heartbeatEvent = undefined;

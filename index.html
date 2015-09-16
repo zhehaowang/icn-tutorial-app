@@ -67,9 +67,8 @@
 		<i class="material-icons">more_vert</i>
 	  </button>
 	  <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
-		<li class="mdl-menu__item">Help</li>
-		<li class="mdl-menu__item">Preferences</li>
-		<li class="mdl-menu__item">Log Out</li>
+		<li id="openShowCertDialogBtn" class="mdl-menu__item">Request certificate</li>
+    <li id="openInstallCertDialogBtn" class="mdl-menu__item">Install signed certificate</li>
 	  </ul>
 	</div>
   </header>
@@ -96,11 +95,7 @@
 
 	  <h6 class="mdl-navigation__link title" id = "chan-title">CHANNELS</h6>    
 
-	  <a class="mdl-navigation__link selected" href="">#NDN_Goodness</a>
-	  <a class="mdl-navigation__link" href="">#General</a>
-	  <a class="mdl-navigation__link" href="">#Random</a>
-	  <a class="mdl-navigation__link" href="">#Cats</a>
-	  <a class="mdl-navigation__link" href="">#good_questions</a>
+	  <p class="mdl-navigation__link selected" href="">#One channel only</p>
 
 	  <div class="mdl-layout-spacer"></div>
     <h6 class="mdl-navigation__link title" id = "dir-title">ROSTER</h6>
@@ -156,7 +151,18 @@
   <input type="text" name="email" id="emailInput"><br>
   Your screen name:
   <input type="text" name="screenname" id="screenNameInput"><br>
- </div>
+</div>
+
+<div id="show-cert-dialog">
+  Cert:
+  <p id="certString"></p>
+</div>
+
+<div id="install-cert-dialog">
+  Install cert:
+  <textarea id="signedCertString"></textarea>
+  <button id="installCertBtn">Install</button>
+</div>
 
 <!--
   TODO (Signing/Verification): 

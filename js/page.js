@@ -3,8 +3,32 @@ var screenName = "";
 var username = "";
 var enabled = false;
 
+var showCertDialog;
+var installCertDialog;
+var emailDialog;
+
 $(document).ready(function(){
-  var dialogElement = $("#email-dialog").dialog({
+  showCertDialog = $("#show-cert-dialog").dialog({
+    title: "Show Cert",
+    autoOpen: false,
+    open: function() {
+      if (chronoChat.hasOwnProperty("certBase64String") && chronoChat.certBase64String !== "") {
+        $("#certString").text(chronoChat.certBase64String);
+      } else {
+        $("#certString").text("Cert not ready yet");
+      }
+    }
+  });
+
+  installCertDialog = $("#install-cert-dialog").dialog({
+    title: "Install Cert",
+    autoOpen: false,
+    open: function() {
+
+    }
+  });
+
+  emailDialog = $("#email-dialog").dialog({
     title: "Email/Name",
     autoOpen: true,
     buttons: {
@@ -32,7 +56,7 @@ $(document).ready(function(){
     open: function() {
       $("#screenNameInput").keyup(function (e) {
         if (e.keyCode == $.ui.keyCode.ENTER) {
-          dialogElement.dialog('option', 'buttons')['OK'].apply(dialogElement);
+          emailDialog.dialog('option', 'buttons')['OK'].apply(emailDialog);
         }
       });
     }
@@ -115,6 +139,15 @@ function startFireChat()
     sendMessageClick();
   });
 
+  $("#installCertBtn").click(function () {
+    var signedCertString = $("#signedCertString").val();
+    var certificate = new IdentityCertificate();
+    certificate.wireDecode(new Buffer(signedCertString, "base64"));
+    chronoChat.keyChain.installIdentityCertificate(certificate).then(function() {
+      console.log("cert ready");
+    });
+  });
+
   $("#chatTextInput").keyup(function (e) {
     if (e.keyCode == $.ui.keyCode.ENTER) {
       sendMessageClick();
@@ -129,6 +162,14 @@ function startFireChat()
     } catch (e) {
       console.log(e);
     }
+  });
+
+  $("#openShowCertDialogBtn").click(function () {
+    showCertDialog.dialog("open");
+  });
+
+  $("#openInstallCertDialogBtn").click(function () {
+    installCertDialog.dialog("open");
   });
 
   enabled = true;

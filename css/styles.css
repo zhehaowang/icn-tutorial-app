@@ -130,9 +130,11 @@ html, body {
   color: #CCBBCC;
 }
 
-
-
-
+#certString {
+  word-break: break-all;
+  /* Note: Should not use absolute pixel here */
+  max-height: 80px;
+}
 
 
 
