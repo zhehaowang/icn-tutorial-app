@@ -140,6 +140,8 @@ var FireChat = function
     self.keyChain.getIdentityManager().identityStorage.getCertificatePromise(myCertificateName, true).then(function(certificate) {
       self.certBase64String = certificate.wireEncode().buf().toString('base64');
     });
+  }, function (error) {
+    console.log("Error in createIdentityAndCertificate: " + error);
   });
 
   this.heartbeatEvent = undefined;

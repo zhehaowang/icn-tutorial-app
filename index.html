@@ -51,7 +51,7 @@
 <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
   <header class="demo-header mdl-layout__header mdl-color--white mdl-color--grey-100 mdl-color-text--grey-600">
 	<div class="mdl-layout__header-row">
-	  <span class="mdl-layout-title">#NDN_Goodness</span>
+	  <span class="mdl-layout-title" id="userInfo"></span>
 	  <div class="mdl-layout-spacer"></div>
 	  
 	  <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
@@ -67,8 +67,10 @@
 		<i class="material-icons">more_vert</i>
 	  </button>
 	  <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
-		<li id="openShowCertDialogBtn" class="mdl-menu__item">Request certificate</li>
+		<li id="openShowCertDialogBtn" class="mdl-menu__item">Show certificate</li>
     <li id="openInstallCertDialogBtn" class="mdl-menu__item">Install signed certificate</li>
+    <li id="srcAndInstructionLink" class="mdl-menu__item"><a href="https://github.com/zhehaowang/icn-tutorial-app" target="_blank">Source and instruction</a></li>
+    <li id="certRequestLink" class="mdl-menu__item"><a href="http://memoria.ndn.ucla.edu:5000" target="_blank">Certificate request site</a></li>
 	  </ul>
 	</div>
   </header>
@@ -95,7 +97,7 @@
 
 	  <h6 class="mdl-navigation__link title" id = "chan-title">CHANNELS</h6>    
 
-	  <p class="mdl-navigation__link selected" href="">#One channel only</p>
+	  <p class="mdl-navigation__link selected" id="chatroomNameLabel"></p>
 
 	  <div class="mdl-layout-spacer"></div>
     <h6 class="mdl-navigation__link title" id = "dir-title">ROSTER</h6>

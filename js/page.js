@@ -198,7 +198,10 @@ obxMUa2fWOg1RwFc5g==";
      hubPrefix, face, keyChain, 
      onChatData, onUserLeave, onUserJoin, updateRoster, 
      true, false);
-  
+
+  $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
+  $("#chatroomNameLabel").html(chatroom);
+
   // UI initialization
   $("#chatBtn").click(function () {
     sendMessageClick();
@@ -208,11 +211,13 @@ obxMUa2fWOg1RwFc5g==";
     var signedCertString = $("#signedCertString").val();
     var certificate = new IdentityCertificate();
     certificate.wireDecode(new Buffer(signedCertString, "base64"));
-    chronoChat.keyChain.installIdentityCertificate(certificate, function() {
+    chronoChat.keyChain.installIdentityCertificate(certificate, function () {
       console.log("Cert installation ready.");
       if (installCertDialog.dialog("isOpen")) {
         installCertDialog.dialog("close");
       }
+    }, function (error) {
+      console.log("Error in installIdentityCertificate: " + error);
     });
   });
 
