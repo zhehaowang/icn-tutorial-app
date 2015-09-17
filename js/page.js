@@ -178,6 +178,8 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
      hubPrefix, face, keyChain, 
      onChatData, onUserLeave, onUserJoin, updateRoster, 
      true, false);
+
+  $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
   
   // UI initialization
   $("#chatBtn").click(function () {
