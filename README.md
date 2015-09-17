@@ -16,13 +16,12 @@ _You can use the online demo without getting certified, but the messages will be
 
 1. Provide an email and nickname, and join the default channel; (Random string or nickname will be generated if left empty)
 2. Get certified (similar as ndncert): 
-    * Open [this link](http://memoria.ndn.ucla.edu:5000) and put in your email
-    * Check your email for a link from testname.zhehao@gmail.com, go to that link
-    * Go back to chat page, click the tools button on the top right corner, click "Request certificate"
+    * Open <a href="http://memoria.ndn.ucla.edu:5000" target="_blank">this link</a> and submit your email
+    * Check your email for a link with token from testname.zhehao@gmail.com, open that link
+    * Go back to chat page, click the dots button at the top right corner, then click "Request certificate"
     * Copy the base64 string from the prompted dialog and paste it to the certificate field in the above-opened link
-    * Make sure you've put in certificate and username field, and submit
-    * The cert should be automatically issued and emailed to your email account; it's up to you to install it in browser (by clicking the "install signed cert" button), or let memoria keep and serve your signed cert.
-
+    * Make sure you've put in username and certificate, then submit
+    * The cert should be automatically issued and emailed to your email account; it's up to you to install it in browser (by clicking the "install signed cert" button, the dialog would close automatically upon successful installation), or let the cert server keep and serve your signed cert.
 3. Chat (for now plain text only)
 
 For now, an indexeddb based local historical chat storage is enabled by default; _Your_ past chat history (using the same email) could be served by the storage.
