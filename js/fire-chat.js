@@ -85,7 +85,7 @@ var FireChat = function
 
   this.heartbeatInterval = 6000;
   // NOTE: if the data takes longer than heartbeatInterval to arrive, a leave will be posted; this may not be ideal
-  this.checkAliveWaitPeriod = this.heartbeatInterval * 2;
+  this.checkAliveWaitPeriod = this.heartbeatInterval * 3;
   
   this.chatDataLifetime = 10000;
   //this.username = this.screenName + session;
