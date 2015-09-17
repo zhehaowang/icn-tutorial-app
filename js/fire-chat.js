@@ -66,8 +66,8 @@ var FireChat = function
   this.chatPrefix = (new Name(this.identityName)).append("CHAT").append("CHANNEL").append(this.chatroom).append("SESSION").append(this.session.toString());
   console.log("My chat prefix: " + this.chatPrefix.toUri() + " ; My screen name " + this.screenName);
 
-  // roster keeps the identities that have responded; 
-  //   key - username + user session; 
+  // roster keeps the identities that have responded;
+  //   key - username + user session;
   //   value - {screenName: user's screen name, 
   //            lastReceivedSeq: last received sequence number from user,
   //            checkAliveEvent: the timeout event for checking back whether this participant is alive};
