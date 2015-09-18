@@ -149,6 +149,8 @@ function updateRoster(roster)
 function onChatDataVerified(name, session, seqNo)
 ```
 
+// TO ADD: getCert() return {String} base64 cert; and installIdentityCertificate(signedCert, onComplete, onError) @param {String} signedCert signed cert @param {Function} callback functions
+
 ##### Call logic from application code
 
 In page.js (code is being updated)
@@ -161,8 +163,9 @@ In page.js (code is being updated)
      true, false);
   ...
   
-  // Install signed certificate
-  chronoChat.keyChain.installIdentityCertificate(certificate, function () {
+  // Get my current unsigned cert, and install signed certificate after getting authorized by root. (to be wrapped around in public API calls)
+  var unsignedCert = chronoChat.getCert();
+  chronoChat.installIdentityCertificate(signedCert, function () {
       console.log("Cert installation ready.");
       ...
   });
