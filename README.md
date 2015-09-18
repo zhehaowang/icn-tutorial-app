@@ -42,7 +42,7 @@ Directories/file structure:
 
 ##### Public API for FireChat class
 
-Constructor, user joins chatroom after successful initialization; 
+**Constructor**, user joins chatroom after successful initialization; The constructor calls createIdentityCertificate, which tries to find an existing certificate for given identity name, or generates a certificate is such is not found.
 
 ```javascript
 /**
@@ -53,7 +53,7 @@ Constructor, user joins chatroom after successful initialization;
  * In the tutorial's case it's the user's email. A 10-character string is used 
  * if undefined.
  * @param {String} chatroom The name of the chatroom/channel
- * @param {Function} onChatData, onUserLeave, onUserJoin, updateRoster; UI callbacks
+ * @param {Function} onChatData, onUserLeave, onUserJoin, updateRosterm onChatDataVerified; UI callbacks
  * @param {Bool} usePersistentStorage Set true for this app to use an indexeddb
  * based persistent chat data storage; defaults to False
  * @param {Bool} requireVerification Set true for this app to ignore unverified
@@ -61,11 +61,11 @@ Constructor, user joins chatroom after successful initialization;
  */
 var FireChat = function
    (screenName, username, chatroom,
-    onChatData, onUserLeave, onUserJoin, updateRoster,
+    onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified
     usePersistentStorage, requireVerification)
 ```
 
-Join method, call to join the chatroom; called automatically by constructor for now.
+**join** method, call to join the chatroom; called automatically by constructor for now.
 
 ```javascript
 /**
@@ -74,7 +74,7 @@ Join method, call to join the chatroom; called automatically by constructor for 
 FireChat.prototype.join = function()
 ```
 
-Send message method, call to send a message to the chatroom;
+**send** message method, call to send a message to the chatroom;
 
 ```javascript
 /**
@@ -84,7 +84,7 @@ Send message method, call to send a message to the chatroom;
 FireChat.prototype.send = function(msg)
 ```
 
-Leave method, call to leave the chatroom.
+**leave** method, call to leave the chatroom.
 
 ```javascript
 /**
@@ -93,7 +93,7 @@ Leave method, call to leave the chatroom.
 FireChat.prototype.leave = function()
 ```
 
-On user join callback method, called when a user join is received, not verified.
+**onUserJoin** callback method, called when a user join is received, not verified. Passed to FireChat in constructor.
 
 ```javascript
 /**
@@ -109,7 +109,7 @@ On user join callback method, called when a user join is received, not verified.
 function onUserJoin(from, time, msg, verified, name, session, seqNo)
 ```
 
-On user leave callback method, called when a user leaves, or does not update heartbeat for given ammount of time, not verified.
+**onUserLeave** callback method, called when a user leaves, or does not update heartbeat for given ammount of time, not verified. Passed to FireChat in constructor.
 
 ```javascript
 /**
@@ -127,7 +127,7 @@ On chat message callback method, called when a non-heartbeat chat message is rec
 function onChatData(from, time, msg, verified, name, session, seqNo)
 ```
 
-On roster update method, usually called right before a user join or leave.
+**onUpdateRoster** method, usually called right before a user join or leave. Passed to FireChat in constructor.
 
 ```javascript
 /**
@@ -137,7 +137,7 @@ On roster update method, usually called right before a user join or leave.
 function updateRoster(roster)
 ```
 
-onDataVerified method, called after a piece of chat data is successfullly verified.
+**onChatDataVerified** method, called after a piece of chat data is successfullly verified. Passed to FireChat in constructor.
 
 ```javascript
 /**
@@ -149,11 +149,40 @@ onDataVerified method, called after a piece of chat data is successfullly verifi
 function onChatDataVerified(name, session, seqNo)
 ```
 
+##### Call logic from application code
+
+In page.js (code is being updated)
+
+```javascript
+##### Public API for FireChat class
+  // Create the FireChat class and join the given chatroom
+  var chronoChat = new FireChat
+    (screenName, username, chatroom, 
+     onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified,
+     true, false);
+  ...
+  
+  // Install signed certificate
+  chronoChat.keyChain.installIdentityCertificate(certificate, function () {
+      console.log("Cert installation ready.");
+      ...
+  });
+  ...
+
+  // Sending chat messages
+  chronoChat.send("Hi there");
+  ...
+  
+  // Leave before window unloads
+  chronoChat.leave();
+
+```
+
 ##### Dependencies: 
 * ndn-js (latest version Sept 16), 
 * jquery (using 1.11),
 * jquery ui,
-* dexie; Expects IndexedDB support from browser
+* dexie (from ndn-js); Expects IndexedDB support from browser
 
 Please refer to [this repository](https://github.com/zhehaowang/openmhealth-cert/tree/icn-cert-deployment) for details of the cert site, currently being updated
 
