@@ -154,7 +154,6 @@ function onChatDataVerified(name, session, seqNo)
 In page.js (code is being updated)
 
 ```javascript
-##### Public API for FireChat class
   // Create the FireChat class and join the given chatroom
   var chronoChat = new FireChat
     (screenName, username, chatroom, 
