@@ -165,6 +165,7 @@ In page.js (code is being updated)
   
   // Get my current unsigned cert, and install signed certificate after getting authorized by root. (to be wrapped around in public API calls)
   var unsignedCert = chronoChat.getCert();
+  ...
   chronoChat.installIdentityCertificate(signedCert, function () {
       console.log("Cert installation ready.");
       ...
@@ -192,7 +193,9 @@ Please refer to [this repository](https://github.com/zhehaowang/openmhealth-cert
 
 **Chat**
 
-For the tutorial app, the chat data name is /ndn/org/icn/USER/[username]/CHAT/CHANNEL/[chatroom]/SESSION/[session]/[seq], in which session is the time when constructor's called. For example, /ndn/org/icn/USER/zhehao@remap.ucla.edu/CHAT/CHANNEL/tutorial-chat/SESSION/1442616246/20.
+For the tutorial app, the chat data name is /ndn/org/icn/USER/[username]/CHAT/CHANNEL/[chatroom]/SESSION/[session]/[seq], in which session is the time when constructor's called. 
+
+For example, /ndn/org/icn/USER/zhehao@remap.ucla.edu/CHAT/CHANNEL/tutorial-chat/SESSION/1442616246/20.
 
 The payload for this data looks like
 ```json
@@ -209,7 +212,9 @@ The current message types in the app are "JOIN", "CHAT", "HELLO", and "LEAVE".
 
 **Sync**
 
-The sync data name is /ndn/multicast/CHAT/CHANNEL/[chatroom]/[digest]; For example, /ndn/multicast/CHAT/CHANNEL/tutorial-chat/e6c18e9e14ab745af533c45f404cc571fada9f6b76fbbe2616f70e2ad9727780.
+The sync data name is /ndn/multicast/CHAT/CHANNEL/[chatroom]/[digest]; 
+
+For example, /ndn/multicast/CHAT/CHANNEL/tutorial-chat/e6c18e9e14ab745af533c45f404cc571fada9f6b76fbbe2616f70e2ad9727780.
 
 Its payload is a Protobuf encoded sync tree.
 
@@ -218,6 +223,7 @@ Its payload is a Protobuf encoded sync tree.
 **User**
 
 User identity: /ndn/org/icn/USER/zhehao@remap.ucla.edu
+
 User certificate: /ndn/org/icn/USER/zhehao@remap.ucla.edu/KEY/ksk-1442514568/ID-CERT/%FD%00%00%01O%DC%92%E5%7E
 
 Given the user identity, the trust schema for sync and chat data is:
