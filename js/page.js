@@ -176,7 +176,7 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
   chronoChat = new FireChat
     (screenName, username, chatroom, 
      hubPrefix, face, keyChain, 
-     onChatData, onUserLeave, onUserJoin, updateRoster, 
+     onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified, 
      true, false);
 
   $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
@@ -244,12 +244,13 @@ function sendMessageClick() {
  * UI callbacks for FireChat
  ************************************************/
 
-function onUserLeave(from, time, msg, verified) {
+function onUserLeave(from, time, msg, verified, name, session, seqNo) {
   var para = document.createElement("P");
   // verified undefined meaning it comes from self
   var additionalClass = "verified";
   if (verified === false) {
     additionalClass = "unverified";
+    $(para).attr("id", name + session + seqNo.toString());
   }
   $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Leave';
@@ -257,12 +258,14 @@ function onUserLeave(from, time, msg, verified) {
   appendElement(para);
 }
 
-function onChatData(from, time, msg, verified) {
+function onChatData(from, time, msg, verified, name, session, seqNo) {
   var para = document.createElement("P");
-  // verified undefined meaning it comes from self
+  // verified bool undefined meaning it comes from self
   var additionalClass = "verified";
+  // we only need ids for those that are marked explicitly as unverified
   if (verified === false) {
     additionalClass = "unverified";
+    $(para).attr("id", name + session + seqNo.toString());
   }
   $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
@@ -270,12 +273,23 @@ function onChatData(from, time, msg, verified) {
   appendElement(para);
 }
 
-function onUserJoin(from, time, msg, verified) {
+/**
+ * user join callback to pass into FireChat class
+ * @param {String} from The screen name of the user that joined
+ * @param {Number} time The receive time of join message
+ * @param {String} msg The message that comes with the join message, ignored
+ * @param {Bool} verified Since we decided to move this out of onVerified to onData, other user join will always be unverified
+ * @param {String} name The user name of the user that joined
+ * @param {String} session The session name of the user that joined
+ * @param {Number} seqNo The sequence number of this join message; this concatenated with name and session is used to identify an html element if needed
+ */
+function onUserJoin(from, time, msg, verified, name, session, seqNo) {
   var para = document.createElement("P");
   // verified undefined meaning it comes from self
   var additionalClass = "verified";
   if (verified === false) {
     additionalClass = "unverified";
+    $(para).attr("id", name + session + seqNo.toString());
   }
   $(para).addClass(additionalClass);
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + '</span>: Join';
@@ -291,6 +305,16 @@ function updateRoster(roster) {
     objDiv.innerHTML += '<li>' + roster[name].screenName + '</li>';
   }
   objDiv.innerHTML += '</ul>';
+}
+
+function onChatDataVerified(name, session, seqNo) {
+  var elementIdStr = name + session + seqNo.toString();
+  var para = document.getElementById(elementIdStr);
+  if (para) {
+    $(para).removeClass("unverified");
+    $(para).addClass("verified");
+    console.log("class added");
+  }
 }
 
 /************************************************
