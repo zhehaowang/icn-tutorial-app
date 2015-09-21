@@ -219,10 +219,10 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 
       // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
       if (self.usePersistentStorage) {
-        self.chatStorage.registerPrefix(self.chatPrefix, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+        self.chatStorage.registerPrefix(self.identityName, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
         self.face.registerPrefix
-          (self.chatPrefix, self.onInterest.bind(self),
+          (self.identityName, self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
     }
@@ -258,7 +258,6 @@ FireChat.prototype.onInterest = function
 
       this.keyChain.sign(data, this.certificateName, function() {
         try {
-          console.log("Put data: " + this.msgCache[i].encode());
           face.putData(data);
         } catch (e) {
           console.log(e.toString());
@@ -519,7 +518,7 @@ FireChat.prototype.checkAlive = function(prevSeq, username, session)
   if (userFullName in this.roster) {
     var seqNo = this.roster[userFullName].lastReceivedSeqNo;
     if (prevSeq == seqNo) {
-      this.userLeave(name, session, (new Date()).getTime());
+      this.userLeave(username, session, (new Date()).getTime());
     }
   }
 };
