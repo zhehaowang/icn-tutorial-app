@@ -154,12 +154,14 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
   // roster keeps the identities that have responded;
   //   key - username + user session;
   //   value - {screenName: user's screen name, 
-  //            lastReceivedSeq: last received sequence number from user,
+  //            lastReceivedSeqNo: largest received sequence number from user,
   //            checkAliveEvent: the timeout event for checking back whether this participant is alive};
   this.roster = {};
   // interestSeqDict keeps the sequence numbers of interests that are sent;
-  //   key - unique username;
-  //   value - latest sequence number for this username that we sent;
+  //   key - username + user session;
+  //   value - {finishedSeq: sequence number before this number does not need to be asked for again
+  //            seqs:        {key: sequence number, value: 0~5 number of retransmissions or -1 data received}
+  //            }
   this.interestSeqDict = {};
 
   this.msgCache = [];
@@ -173,6 +175,7 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
   this.checkAliveWaitPeriod = this.heartbeatInterval * 3;
   
   this.chatDataLifetime = 10000;
+  this.maxNumOfRetransmission = 3;
   //this.username = this.screenName + session;
   
   this.usePersistentStorage = usePersistentStorage;
@@ -216,10 +219,10 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 
       // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
       if (self.usePersistentStorage) {
-        self.chatStorage.registerPrefix(self.chatPrefix, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+        self.chatStorage.registerPrefix(self.identityName, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
-        face.registerPrefix
-          (self.chatPrefix, self.onInterest.bind(self),
+        self.face.registerPrefix
+          (self.identityName, self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
     }
@@ -244,9 +247,11 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 FireChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  var seq = parseInt(interest.getName().get(-1).toEscapedString());
+  var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
+  console.log("interest received: " + interest.getName().toUri());
+
   for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
-    if (this.msgCache[i].seqNo == seq) {
+    if (this.msgCache[i].seqNo == seqNo) {
       var data = new Data(interest.getName());
       data.setContent(this.msgCache[i].encode());
       data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
@@ -327,30 +332,41 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
     var tempFullName = tempName + tempSession;
     
     if (tempName != this.username || tempSession != this.session) {
-      if (syncStates[j].getDataPrefix() in sendList) {
-        sendList[syncStates[j].getDataPrefix()].seqNo = syncStates[j].getSequenceNo();
-        sendList[syncStates[j].getDataPrefix()].sessionNo = syncStates[j].getSessionNo();
+      if (tempFullName in sendList) {
+        sendList[tempFullName].seqNo = syncStates[j].getSequenceNo();
       } else {
-        sendList[syncStates[j].getDataPrefix()] = {"seqNo": syncStates[j].getSequenceNo(), "sessionNo": syncStates[j].getSessionNo()};
+        sendList[tempFullName] = {"seqNo": syncStates[j].getSequenceNo(), "dataPrefix": nameComponents};
       }
     }
   }
   
-  for (var dataPrefix in sendList) {
-    var tempSession = (new Name(dataPrefix)).get(-1).toEscapedString();
-    var tempName = unescape((new Name(dataPrefix)).get(this.identityName.size() - 1).toEscapedString());
-    var tempFullName = tempName + tempSession;
+  for (var tempFullName in sendList) {
+    if (!(tempFullName in this.interestSeqDict)) {
+      this.interestSeqDict[tempFullName] = {"finishedSeq": 0, "seqs": {}};
+    }
+    for (var i = this.interestSeqDict[tempFullName].finishedSeq + 1; i <= sendList[tempFullName].seqNo; i++) {
+      if (!(i in this.interestSeqDict[tempFullName].seqs)) {
+        this.interestSeqDict[tempFullName].seqs[i] = 0;
 
+        var interest = new Interest((new Name(sendList[tempFullName].dataPrefix)).append(i.toString()));
+        interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
+        this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
+
+        console.log("Sent interest: " + interest.getName().toUri());
+      }
+    }
+    /*
     if (!(tempFullName in this.interestSeqDict) || sendList[dataPrefix].seqNo > this.interestSeqDict[tempFullName]) {
       var name = (new Name(dataPrefix)).append(sendList[dataPrefix].seqNo.toString());
       var interest = new Interest(new Name(name));
       interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
-      this.face.expressInterest(interest, this.onData.bind(this), this.chatTimeout.bind(this));
+      this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
       this.interestSeqDict[tempFullName] = sendList[dataPrefix].seqNo;
       console.log("Sent interest: " + name.toUri());
     } else {
       this.interestSeqDict[tempFullName] = sendList[dataPrefix].seqNo;
     }
+    */
   }
 };
 
@@ -395,40 +411,51 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
   // NOTE: this makes assumption about where the names are
   var session = (data.getName().get(-2)).toEscapedString();
   var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-  var name = unescape(data.getName().get(this.identityName.size() - 1).toEscapedString());
-  var userFullName = name + session;
+  var username = unescape(data.getName().get(this.identityName.size() - 1).toEscapedString());
+  var userFullName = username + session;
 
   if (content.msgType === "LEAVE") {
     if ((userFullName in this.roster) && this.roster[userFullName].checkAliveEvent !== undefined) {
       clearTimeout(this.roster[userFullName].checkAliveEvent);
     }
-    this.userLeave(name, session, onDataTimestamp, false);
+    this.userLeave(username, session, onDataTimestamp, false);
   } else {
     if (!(userFullName in this.roster)) {
-      this.userJoin(name, session, content.fromScreenName, onDataTimestamp, seqNo, false);
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
-    } else if (this.roster[userFullName].lastReceivedSeq < seqNo) {
-      this.roster[userFullName].lastReceivedSeq = seqNo;
+      this.userJoin(username, session, content.fromScreenName, onDataTimestamp, seqNo, false);
+      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
+    } else if (this.roster[userFullName].lastReceivedSeqNo < seqNo) {
+      this.roster[userFullName].lastReceivedSeqNo = seqNo;
       // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
       if (this.roster[userFullName].checkAliveEvent !== undefined) {
         clearTimeout(this.roster[userFullName].checkAliveEvent);
       }
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
+      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
     }
     // we don't schedule a checkAlive event, if chat data arrived out-of-order
   }
 
   if (content.msgType == "CHAT"){
-    var escaped_msg = $('<div/>').text(content.data).html();
     if (this.onChatData !== undefined) {
-      this.onChatData(content.fromScreenName, onDataTimestamp, escaped_msg, false, name, session, seqNo);
+      this.onChatData(content.fromScreenName, onDataTimestamp, content.data, false, username, session, seqNo);
     }
+  }
+  
+  try {
+    this.interestSeqDict[userFullName].seqs[seqNo] = -1;
+    for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
+      if (this.interestSeqDict[userFullName].seqs[i] === -1) {
+        this.interestSeqDict[userFullName].finishedSeq = i;
+        delete this.interestSeqDict[userFullName].seqs[i];
+      }
+    }
+  } catch (e) {
+    console.log("onData interestSeqDict operation error: " + e);
   }
   
   var self = this;
   this.keyChain.verifyData(data, 
     function () {
-      self.onDataVerified(data, updatePersistentStorage, content, name, session, seqNo);
+      self.onDataVerified(data, updatePersistentStorage, content, username, session, seqNo);
     },
     function () {
       self.onDataVerifyFailed(data);
@@ -439,9 +466,34 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
  * Timeout callback for chat data
  * TODO: re-express interest if data times out
  */
-FireChat.prototype.chatTimeout = function(interest)
+FireChat.prototype.onTimeout = function(interest)
 {
   console.log("Timeout waiting for chat data: " + interest.getName().toUri());
+  // NOTE: this makes assumption about where the names are
+  var session = (interest.getName().get(-2)).toEscapedString();
+  var seqNo = parseInt((interest.getName().get(-1)).toEscapedString());
+  var username = unescape(interest.getName().get(this.identityName.size() - 1).toEscapedString());
+  var userFullName = username + session;
+  
+  try {
+    if (this.interestSeqDict[userFullName].seqs[seqNo] < this.maxNumOfRetransmission) {
+      this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
+      this.interestSeqDict[userFullName].seqs[seqNo] ++;
+    } else {
+      // We don't ask for this piece of data any more because of too many timeouts; we treat this piece of data as if received.
+      // TODO: This does not handle the case in which the chat publisher becomes available later on.
+      console.log("Stop asking for " + interest.getName().toUri() + ", because max retransmission reached.");
+      this.interestSeqDict[userFullName].seqs[seqNo] = -1;
+      for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
+        if (this.interestSeqDict[userFullName].seqs[i] === -1) {
+          this.interestSeqDict[userFullName].finishedSeq = i;
+          delete this.interestSeqDict[userFullName].seqs[i];
+        }
+      }
+    }
+  } catch (e) {
+    console.log("onTimeout interestSeqDict operation error: " + e);
+  }
 };
 
 /**
@@ -460,13 +512,13 @@ FireChat.prototype.heartbeat = function()
  * @param {String} username
  * @param {String} session
  */
-FireChat.prototype.checkAlive = function(prevSeq, name, session)
+FireChat.prototype.checkAlive = function(prevSeq, username, session)
 {
-  var userFullName = name + session;
+  var userFullName = username + session;
   if (userFullName in this.roster) {
-    var seq = this.roster[userFullName].lastReceivedSeq;
-    if (prevSeq == seq) {
-      this.userLeave(name, session, (new Date()).getTime());
+    var seqNo = this.roster[userFullName].lastReceivedSeqNo;
+    if (prevSeq == seqNo) {
+      this.userLeave(username, session, (new Date()).getTime());
     }
   }
 };
@@ -510,19 +562,19 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
  * @param {Number} sequenceNo The sequence number of this join messages, used for lastReceivedSeq record in roster
  * @param {Bool} verified Undefined if called from this user's join
  */
-FireChat.prototype.userJoin = function(username, session, screenName, time, sequenceNo, verified)
+FireChat.prototype.userJoin = function(username, session, screenName, time, seqNo, verified)
 {
   if (this.onUserJoin !== undefined) {
-    this.onUserJoin(screenName, time, "", verified, username, session, sequenceNo);
+    this.onUserJoin(screenName, time, "", verified, username, session, seqNo);
   }
   if (verified === undefined || verified || !this.requireVerification) {
     var userFullName = username + session;
-    if (sequenceNo !== undefined) {
+    if (seqNo !== undefined) {
       // Other participants
-      this.roster[userFullName] = {'screenName': screenName, 'lastReceivedSeq': sequenceNo};
+      this.roster[userFullName] = {'screenName': screenName, 'lastReceivedSeqNo': seqNo};
     } else {
       // Self participant
-      this.roster[userFullName] = {'screenName': screenName, 'lastReceivedSeq': 0};
+      this.roster[userFullName] = {'screenName': screenName, 'lastReceivedSeqNo': 0};
     }
     if (this.updateRoster !== undefined) {
       this.updateRoster(this.roster);
