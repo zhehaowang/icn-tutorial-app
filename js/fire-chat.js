@@ -36,15 +36,100 @@
  * sync messages; defaults to False
  */
 var FireChat = function
-   (screenName, username, chatroom, hubPrefix, 
-    face, keyChain, 
-    onChatData, onUserLeave, onUserJoin, updateRoster,
+   (screenName, username, chatroom,
+    onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified,
     usePersistentStorage, requireVerification)
 {
+
+  var hostName = "localhost";
+  var hubPrefix = "/ndn/org/icn/USER";
+
+  this.face = new Face({host: hostName});
+  var identityStorage = new IndexedDbIdentityStorage();
+  var privateKeyStorage = new IndexedDbPrivateKeyStorage();
+  var policyManager = new ConfigPolicyManager();
+
+  this.keyChain = new KeyChain
+    (new IdentityManager(identityStorage, privateKeyStorage),
+     policyManager);
+  this.keyChain.setFace(this.face);
+
+  // Hard-coded trust anchor cert encoded as base64 string
+  // My in-browser test anchor
+  //var trustAnchorBase64 = "Bv0C8Qc4CANuZG4IA29yZwgDaWNuCANLRVkIDmtzay0xNDQxNDE3MzgyCAdJRC1DRVJUCAn9AAABT5srytUUAxgBAhX9AXQwggFwMCIYDzIwMTUwOTA1MDE0MzAyWhgPMjAxNzA5MDQwMTQzMDJaMCQwIgYDVQQpExsvbmRuL29yZy9pY24va3NrLTE0NDE0MTczODIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCt1v/hUxoKdi2epLAUUJElS3HCh5extviDirWJabaVrYY0n2bxeG7H/HimOSU0nfDeqc9aiaXnw0jMlI/gUs+jE2Y7oklp0M8WufCgJxKNjeqTsWJ6/Sy8j9UJA5ZFLut1wbm/0o6aj6nnQG8Ju2cJR/aDO1NjbTNdQf15EBxg2tK9kA4g3TMTc+BabGUoHWqtQdVrk1hGRy6nYhNbgra8NMefVvwHcGP2030WVh74goK90ibbz/jQq06msfHTLZWVgut+i8QeM5zf3vGPYiMz4bY+cYuvbHTzsqslUxv7UzU3arB6L+st7KywkcRydEA+cFF3eN7DwK4XKCHU0fNtAgMBAAEWNBsBARwvBy0IA25kbggDb3JnCANpY24IA0tFWQgOa3NrLTE0NDE0MTczODIIB0lELUNFUlQX/QEAiaL58x2KPtx02T6N6bWGPBcYPVaa8qn/3D/H9bpHPOiMQ8rCvP3iD0BDq/KXfNRxuoHMA41c8LVot4NqK5mCDc9w15WIpmSQ/tbY4XGH9VuS2y2eoEozfV/IT85s6k5iHZkNJl5aEfSBpPaWGuZypa3ovngkOqyYP+WZiAXQbOaYK9jRFL9RYw7WKIFiIxIDe+D0eVqgqmf+Y2YrHy2MrVQXddn4z128umhOZTaedRXv8IUs/rSkmeJVIjVEiaXNZHxd6PsWV5qDQFqx7caEjEjZlKXvDrNznk6gQ2TBfJAcdPc5/2xvwaJlFy2+LeR/dJgK5MQ9MCBAPXgFuNaheg==";
+  
+  // ICN cert test anchor, identity /ndn/org/icn/USER on my machine
+  var trustAnchorBase64 = "Bv0DEQdBCANuZG4IA29yZwgDaWNuCARVU0VSCANLRVkIEWtzay0xNDQyMzc0MTcz\
+ODk4CAdJRC1DRVJUCAn9AAABT9Q1jfwUCRgBAhkEADbugBX9AXwwggF4MCIYDzIw\
+MTUwOTE2MDMzMjAzWhgPMjAzNTA5MTEwMzMyMDNaMCwwKgYDVQQpEyMvbmRuL29y\
+Zy9pY24vVVNFUi9rc2stMTQ0MjM3NDE3Mzg5ODCCASIwDQYJKoZIhvcNAQEBBQAD\
+ggEPADCCAQoCggEBALNdLoGnKHT+6YVW24MqHT3zMICgrlD+YmcASLrpMrFJ0oMO\
+R4glXPefaVAjvaQmxwNUriOxCaD/PmrudPgCPykrRlSL0hFYTevCjRfMD+jDJMs1\
+RkEo37q6i252f7v4dpYUlz96fSqEC712YxsJ9Vh0mbaYtKGQQou0+lVewR0KQbQJ\
+S88Lyi/Vj6xWGxEaHAyHSPGKKip0EMehkqxegpi+Br9UGPDzNMB3OXeNuERcrcMS\
+7z+qI+hgWoJAEvF7o4pEMYHkDRC6Y7JX751WCTyWiEKouIC4xrQEv6Xq70A+6xma\
+Paxx4QX66ZZ6T+bbulAZj+8bc0EApRuRmRrOqwkCAwEAARY9GwEBHDgHNggDbmRu\
+CANvcmcIA2ljbggEVVNFUggDS0VZCBFrc2stMTQ0MjM3NDE3Mzg5OAgHSUQtQ0VS\
+VBf9AQChD7qJasfM2pLWRNY4Uz/GfsZzYJEOQy5h9QaTNAAW3vxBg5PM3UO7joNy\
+xdV1bUho5iQgutg3dLPr3NgG7sPuAjMGVoXxAKOgCEulluc0MV2zwNdjw/7ywp47\
+9TbDb/ysSfFi2oOV95Y/h8hZJvTRoud8mwc6LyeLsdkWbeYOe6BpIB9Bga4Uvn+P\
+glaBoEwaWwOvBfvmPDwccOr22o9JVqbiWRi/ICULJ7uZUZye82LoCTgaoQqlna6F\
+UTWfKrVhIhZFokinwHeDDtEw8rQrzCW5kAvcPb7CeFZzhFB5PH7b/f0n2ig6iLFh\
+ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
+
+  var policy =
+    "validator"                   + "\n" +
+    "{"                           + "\n" +
+    "  rule"                      + "\n" +
+    "  {"                         + "\n" +
+    "    id \"Chat Rule\""        + "\n" +
+    "    for data"                + "\n" +
+    "    filter"                  + "\n" +
+    "    {"                       + "\n" +
+    "      type name"             + "\n" +
+    "      name /ndn/org/icn"     + "\n" +
+    "      relation is-prefix-of" + "\n" +
+    "    }"                       + "\n" +
+    "    checker"                 + "\n" +
+    "    {"                       + "\n" +
+    "      type hierarchical"     + "\n" +
+    "      sig-type rsa-sha256"   + "\n" +
+    "    }"                       + "\n" +
+    "  }"                         + "\n" +
+
+    "  rule"                      + "\n" +
+    "  {"                         + "\n" +
+    "    id \"Sync Rule\""        + "\n" +
+    "    for data"                + "\n" +
+    "    filter"                  + "\n" +
+    "    {"                       + "\n" +
+    "      type name"             + "\n" +
+    "      name /ndn/multicast/CHAT/CHANNEL" + "\n" +
+    "      relation is-prefix-of" + "\n" +
+    "    }"                       + "\n" +
+    "    checker"                 + "\n" +
+    "    {"                       + "\n" +
+    "      type customized"       + "\n" +
+    "      sig-type rsa-sha256"   + "\n" +
+    "      key-locator"           + "\n" +
+    "      {"                     + "\n" +
+    "        type name"           + "\n" +
+    "        regex ^<ndn><org><icn><USER><><KEY><><ID-CERT>$" + "\n" +
+    "      }"                     + "\n" +
+    "    }"                       + "\n" +
+    "  }"                         + "\n" +
+
+    "  trust-anchor"              + "\n" +
+    "  {"                         + "\n" +
+    "    type base64"             + "\n" +
+    "    base64-string \"" + trustAnchorBase64 + "\"" + "\n" +
+    "  }"                         + "\n" +
+    "}"                           + "\n";
+
+  policyManager.load(policy, "chat-policy");
+
   this.chatroom = chatroom;
   this.isRecoverySyncState = true;
-  this.face = face;
-  this.keyChain = keyChain;
   this.requireVerification = requireVerification;
 
   if (username === undefined || username === "") {
@@ -102,7 +187,8 @@ var FireChat = function
   this.onChatData = onChatData;
   this.onUserLeave = onUserLeave;
   this.onUserJoin = onUserJoin;
-  this.updateRoster = updateRoster;  
+  this.onChatDataVerified = onChatDataVerified;
+  this.updateRoster = updateRoster;
   
   // Create identity and certificate if not already exist; Start sync upon successful creation
   this.certBase64String = "";
@@ -268,58 +354,22 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
 };
 
-/**
- * KeyChain onVerified and onVerifyFailed callback. Processes the received chat data
- * @param {Interest}
- * @param {Data}
- * @param {Bool} verified Set true if data's successfully verified
- * @param {Bool} updatePersistentStorage Set true or undefined if called by receiving data from face; false if called from persistentStorage traversal
- * @param {Number} onDataTimestamp The timestamp of data upon its reception
- */
-FireChat.prototype.processData = function(interest, data, verified, updatePersistentStorage, onDataTimestamp)
+FireChat.prototype.onDataVerified = function(data, updatePersistentStorage, content, name, session, seqNo)
 {
-  var content = new FireChat.ChatMessage(data.getContent().buf().toString('binary'));
-  
-  // NOTE: this makes assumption about where the names are
-  var session = (data.getName().get(-2)).toEscapedString();
-  var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
-  var name = unescape(data.getName().get(this.identityName.size() - 1).toEscapedString());
-  var userFullName = name + session;
-
-  if (verified || !this.requireVerification) {
-    if (content.msgType === "LEAVE") {
-      if ((userFullName in this.roster) && this.roster[userFullName].checkAliveEvent !== undefined) {
-        clearTimeout(this.roster[userFullName].checkAliveEvent);
-      }
-      this.userLeave(name, session, onDataTimestamp, verified);
-    } else {
-      if (!(userFullName in this.roster)) {
-        this.userJoin(name, session, content.fromScreenName, onDataTimestamp, seqNo, verified);
-        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
-      } else if (this.roster[userFullName].lastReceivedSeq < seqNo) {
-        this.roster[userFullName].lastReceivedSeq = seqNo;
-        // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
-        if (this.roster[userFullName].checkAliveEvent !== undefined) {
-          clearTimeout(this.roster[userFullName].checkAliveEvent);
-        }
-        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
-      }
-      // we don't schedule a checkAlive event, if chat data arrived out-of-order
-    } 
-  }
-
-  if (content.msgType == "CHAT"){
-    var escaped_msg = $('<div/>').text(content.data).html();
-    if (this.onChatData !== undefined) {
-      this.onChatData(content.fromScreenName, onDataTimestamp, escaped_msg, verified);
-    }
-  }
-  
+  console.log("Data verified.");
   // Note: we store verified chat data into persistent storage only; old condition: (verified || !this.requireVerification)
-  if (this.usePersistentStorage && updatePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined && content.msgType !== "HELLO" && verified) {
+  if (this.usePersistentStorage && updatePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined && content.msgType !== "HELLO") {
     // Assuming that the same name in data packets always contain identitcal data packets
     this.chatStorage.add(data);
   }
+  if (this.onChatDataVerified !== undefined) {
+    this.onChatDataVerified(name, session, seqNo);
+  }
+}
+
+FireChat.prototype.onDataVerifyFailed = function(data)
+{
+  console.log("Data verify failed.");
 }
 
 /**
@@ -338,15 +388,50 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
   if (onDataTimestamp === undefined) {
     onDataTimestamp = (new Date()).getTime();
   }
+
+  // we process the data without verifying.
+  var content = new FireChat.ChatMessage(data.getContent().buf().toString('binary'));
+  
+  // NOTE: this makes assumption about where the names are
+  var session = (data.getName().get(-2)).toEscapedString();
+  var seqNo = parseInt((data.getName().get(-1)).toEscapedString());
+  var name = unescape(data.getName().get(this.identityName.size() - 1).toEscapedString());
+  var userFullName = name + session;
+
+  if (content.msgType === "LEAVE") {
+    if ((userFullName in this.roster) && this.roster[userFullName].checkAliveEvent !== undefined) {
+      clearTimeout(this.roster[userFullName].checkAliveEvent);
+    }
+    this.userLeave(name, session, onDataTimestamp, false);
+  } else {
+    if (!(userFullName in this.roster)) {
+      this.userJoin(name, session, content.fromScreenName, onDataTimestamp, seqNo, false);
+      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
+    } else if (this.roster[userFullName].lastReceivedSeq < seqNo) {
+      this.roster[userFullName].lastReceivedSeq = seqNo;
+      // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
+      if (this.roster[userFullName].checkAliveEvent !== undefined) {
+        clearTimeout(this.roster[userFullName].checkAliveEvent);
+      }
+      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, name, session), this.checkAliveWaitPeriod);
+    }
+    // we don't schedule a checkAlive event, if chat data arrived out-of-order
+  }
+
+  if (content.msgType == "CHAT"){
+    var escaped_msg = $('<div/>').text(content.data).html();
+    if (this.onChatData !== undefined) {
+      this.onChatData(content.fromScreenName, onDataTimestamp, escaped_msg, false, name, session, seqNo);
+    }
+  }
+  
   var self = this;
   this.keyChain.verifyData(data, 
     function () {
-      console.log("Data verified.");
-      self.processData(interest, data, true, updatePersistentStorage, onDataTimestamp);
+      self.onDataVerified(data, updatePersistentStorage, content, name, session, seqNo);
     },
     function () {
-      console.log("Data verify failed.");
-      self.processData(interest, data, false, updatePersistentStorage, onDataTimestamp);
+      self.onDataVerifyFailed(data);
     });
 };
 
@@ -428,7 +513,7 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
 FireChat.prototype.userJoin = function(username, session, screenName, time, sequenceNo, verified)
 {
   if (this.onUserJoin !== undefined) {
-    this.onUserJoin(screenName, time, "", verified);
+    this.onUserJoin(screenName, time, "", verified, username, session, sequenceNo);
   }
   if (verified === undefined || verified || !this.requireVerification) {
     var userFullName = username + session;
@@ -461,7 +546,7 @@ FireChat.prototype.send = function(msg)
     this.messageCacheAppend("JOIN", "");
   this.messageCacheAppend("CHAT", msg);
 
-  onChatData(this.screenName, (new Date()).getTime(), msg);
+  this.onChatData(this.screenName, (new Date()).getTime(), msg);
 };
 
 /**

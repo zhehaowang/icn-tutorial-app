@@ -71,6 +71,7 @@
     <li id="openInstallCertDialogBtn" class="mdl-menu__item">Install signed certificate</li>
     <li id="srcAndInstructionLink" class="mdl-menu__item"><a href="https://github.com/zhehaowang/icn-tutorial-app" target="_blank">Source and instruction</a></li>
     <li id="certRequestLink" class="mdl-menu__item"><a href="http://memoria.ndn.ucla.edu:5000" target="_blank">Certificate request site</a></li>
+    <li id="showSyncTreeDialogBtn" class="mdl-menu__item">Show sync tree</li>
 	  </ul>
 	</div>
   </header>
@@ -166,6 +167,11 @@
   <button id="installCertBtn">Install</button>
 </div>
 
+<div id="sync-tree-dialog">
+  Show sync tree:
+  <div id="sync-tree"></div>
+</div>
+
 <!--
   TODO (Signing/Verification): 
   1. Put a modal dialogue to ask the user to put his email
@@ -189,6 +195,7 @@
 <script src="js/material.min.js"></script>
 <script src="js/jquery-1.11.3.min.js"></script>
 <script src="js/jquery-ui.min.js"></script>
+<script src="js/d3/d3.min.js"></script>
 
 <script src="js/protobuf/long.min.js"></script>
 <script src="js/protobuf/bytebuffer-ab.min.js"></script>
