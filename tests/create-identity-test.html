@@ -1,0 +1,41 @@
+<?xml version = "1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"DTD/xhtml1-strict.dtd">
+<html xmlns = "http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>Test Validate</title>
+
+  <script src="../js/ndn.min.js"></script>
+  <script type="text/javascript">
+
+var AppConfig = function AppConfig()
+{
+  this.host = "memoria.ndn.ucla.edu";
+  var policyManager = new ConfigPolicyManager();
+  this.identityStorage = new IndexedDbIdentityStorage();
+  this.keyChain = new KeyChain
+    (new IdentityManager(this.identityStorage, new IndexedDbPrivateKeyStorage()),
+     policyManager);
+
+  this.keyChain.createIdentityAndCertificate
+    (mockIcnIdentityName, function(certificateName) {
+    console.log("Cert name " + certificateName.toUri());
+  }, function(error) {
+    console.log("createIdentityCertificate Error: " + error);
+  });
+};
+
+function doServe() 
+{
+  var appConfig = new AppConfig();
+}
+
+  </script>
+</head>
+<body >
+  Code from Jeff T's sample tutorial app with minimal change
+  <p>Click serve ICN root cert so that it would be served.</p>
+  <button onclick="doServe()">Serve ICN root cert</button>
+</body>
+</html>
