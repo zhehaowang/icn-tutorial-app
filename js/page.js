@@ -123,7 +123,7 @@ function startFireChat()
   chronoChat = new FireChat
     (screenName, username, chatroom, 
      onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified, 
-     true, false);
+     false, false);
 
   $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
   $("#chatroomNameLabel").html(chatroom);
@@ -218,6 +218,8 @@ function onChatData(from, time, msg, verified, name, session, seqNo) {
     $(para).attr("id", name + session + seqNo.toString());
   }
   $(para).addClass(additionalClass);
+
+  var escaped_msg = $('<div/>').text(msg).html();
   para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
   para.onDataTimestamp = time;
   appendElement(para);

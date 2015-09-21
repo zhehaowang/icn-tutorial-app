@@ -221,7 +221,7 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
       if (self.usePersistentStorage) {
         self.chatStorage.registerPrefix(self.chatPrefix, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
-        face.registerPrefix
+        self.face.registerPrefix
           (self.chatPrefix, self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
@@ -248,6 +248,8 @@ FireChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
   var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
+  console.log("interest received: " + interest.getName().toUri());
+
   for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
     if (this.msgCache[i].seqNo == seqNo) {
       var data = new Data(interest.getName());
@@ -256,6 +258,7 @@ FireChat.prototype.onInterest = function
 
       this.keyChain.sign(data, this.certificateName, function() {
         try {
+          console.log("Put data: " + this.msgCache[i].encode());
           face.putData(data);
         } catch (e) {
           console.log(e.toString());
@@ -433,9 +436,8 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
   }
 
   if (content.msgType == "CHAT"){
-    var escaped_msg = $('<div/>').text(content.data).html();
     if (this.onChatData !== undefined) {
-      this.onChatData(content.fromScreenName, onDataTimestamp, escaped_msg, false, username, session, seqNo);
+      this.onChatData(content.fromScreenName, onDataTimestamp, content.data, false, username, session, seqNo);
     }
   }
   
