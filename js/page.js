@@ -76,7 +76,7 @@ $(document).ready(function(){
           "parent": rootDigest
         });
       }
-      update(syncTreeJson);
+      updateSyncTree(syncTreeJson);
     }
   });
 
@@ -295,7 +295,7 @@ function getRandomNameString(len)
 /************************************************
  * D3 sync tree render function
  ************************************************/
-function update(source) {
+function updateSyncTree(source) {
   $("#sync-tree").html("");
 
   var margin = {top: 20, right: 120, bottom: 20, left: 120},

@@ -137,7 +137,11 @@ html, body {
 }
 
 
-
+#sync-tree {
+  /* Note: value here does not matter, having this value would confine the inner div to a fixed size */
+  max-height: 100px;
+  max-width: 600px;
+}
 
 /**
 commenting and feed of comments
