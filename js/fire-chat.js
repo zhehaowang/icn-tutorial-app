@@ -220,10 +220,10 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
       // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
       // TODO: register for chat messages as of now cert interest response is bugged.
       if (self.usePersistentStorage) {
-        self.chatStorage.registerPrefix(self.identityName.append("CHAT"), self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+        self.chatStorage.registerPrefix((new Name(self.identityName)).append("CHAT"), self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
         self.face.registerPrefix
-          (self.identityName.append("CHAT"), self.onInterest.bind(self),
+          ((new Name(self.identityName)).append("CHAT"), self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
     }
@@ -361,9 +361,6 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
   
   for (var tempFullName in sendList) {
-    if (tempFullName === this.username + this.session) {
-      break;
-    }
     if (!(tempFullName in this.interestSeqDict)) {
       this.interestSeqDict[tempFullName] = {"finishedSeq": 0, "seqs": {}};
     }
