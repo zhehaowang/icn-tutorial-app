@@ -33,11 +33,7 @@ $(document).ready(function(){
     title: "Show Cert",
     autoOpen: false,
     open: function() {
-      if (chronoChat.hasOwnProperty("certBase64String") && chronoChat.certBase64String !== "") {
-        $("#certString").text(chronoChat.certBase64String);
-      } else {
-        $("#certString").text("Cert not ready yet");
-      }
+      $("#certString").text(chronoChat.getBase64CertString());
     }
   });
 
@@ -148,15 +144,16 @@ function startFireChat()
 
   $("#installCertBtn").click(function () {
     var signedCertString = $("#signedCertString").val();
-    var certificate = new IdentityCertificate();
-    certificate.wireDecode(new Buffer(signedCertString, "base64"));
-    chronoChat.keyChain.installIdentityCertificate(certificate, function () {
+    chronoChat.installIdentityCertificate(signedCertString, function () {
       console.log("Cert installation ready.");
       if (installCertDialog.dialog("isOpen")) {
         installCertDialog.dialog("close");
       }
     }, function (error) {
       console.log("Error in installIdentityCertificate: " + error);
+      if (installCertDialog.dialog("isOpen")) {
+        installCertDialog.dialog("close");
+      }
     });
   });
 
@@ -233,7 +230,9 @@ function onChatData(from, time, msg, verified, name, session, seqNo) {
   $(para).addClass(additionalClass);
 
   var escaped_msg = $('<div/>').text(msg).html();
-  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
+  escaped_msg = escaped_msg.replace(/(ndn:\/[^ ]+)/g, "<a href=$1 target=\"_blank\">$1</a> (view in Firefox)");
+
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + escaped_msg;
   para.onDataTimestamp = time;
   appendElement(para);
 }
