@@ -218,11 +218,12 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
       }
 
       // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
+      // TODO: register for chat messages as of now cert interest response is bugged.
       if (self.usePersistentStorage) {
-        self.chatStorage.registerPrefix(self.identityName, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+        self.chatStorage.registerPrefix(self.identityName.append("CHAT"), self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
         self.face.registerPrefix
-          (self.identityName, self.onInterest.bind(self),
+          (self.identityName.append("CHAT"), self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
     }
@@ -567,7 +568,8 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
   }
   if (verified === undefined || verified || !this.requireVerification) {
     if (userFullName in this.interestSeqDict) {
-      delete this.interestSeqDict[userFullName]; 
+      // Note: We leave the participant info in interestSeqDict so that we don't have participant left but jumping in/out in client
+      //delete this.interestSeqDict[userFullName]; 
     }
   }
 };
