@@ -41,7 +41,7 @@ var FireChat = function
     usePersistentStorage, requireVerification)
 {
 
-  var hostName = "localhost";
+  var hostName = "memoria.ndn.ucla.edu";
   var hubPrefix = "/ndn/org/icn/USER";
 
   this.face = new Face({host: hostName});

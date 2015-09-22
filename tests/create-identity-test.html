@@ -19,7 +19,7 @@ var AppConfig = function AppConfig()
      policyManager);
 
   this.keyChain.createIdentityAndCertificate
-    (mockIcnIdentityName, function(certificateName) {
+    (new Name("/ndn/org/icn"), function(certificateName) {
     console.log("Cert name " + certificateName.toUri());
   }, function(error) {
     console.log("createIdentityCertificate Error: " + error);
@@ -35,7 +35,7 @@ function doServe()
 </head>
 <body >
   Code from Jeff T's sample tutorial app with minimal change
-  <p>Click serve ICN root cert so that it would be served.</p>
+  <p>Click to call createIdentityAndCertificate, please open JS console.</p>
   <button onclick="doServe()">Serve ICN root cert</button>
 </body>
 </html>
