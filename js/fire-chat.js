@@ -361,6 +361,9 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
   }
   
   for (var tempFullName in sendList) {
+    if (tempFullName !== this.username + this.session) {
+      break;
+    }
     if (!(tempFullName in this.interestSeqDict)) {
       this.interestSeqDict[tempFullName] = {"finishedSeq": 0, "seqs": {}};
     }
