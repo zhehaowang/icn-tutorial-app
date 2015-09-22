@@ -247,23 +247,42 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 FireChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
-  console.log("interest received: " + interest.getName().toUri());
+  // cert interest
+  if (interest.getName().size() == this.identityName.size() + 3) {
+    var self = this;
+    console.log("cert interest: " + interest.getName().toUri());
+    
+    var keyName = IdentityCertificate.certificateNameToPublicKeyName
+      (interest.getName());
+    
+    self.keyChain.identityManager.identityStorage.getDefaultCertificateNameForKeyPromise(keyName)
+    .then(function(defaultCertificateName) {
+      return self.keyChain.identityManager.identityStorage.getCertificatePromise
+        (defaultCertificateName, true);
+    })
+    .then(function(certificate) {
+      //self.face.putData(certificate);
+      console.log("About to send certificate: " + certificate.getName().toUri());
+    })
+  } else {
+    var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
+    console.log("chat interest: " + interest.getName().toUri());
 
-  for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
-    if (this.msgCache[i].seqNo == seqNo) {
-      var data = new Data(interest.getName());
-      data.setContent(this.msgCache[i].encode());
-      data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
+    for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
+      if (this.msgCache[i].seqNo == seqNo) {
+        var data = new Data(interest.getName());
+        data.setContent(this.msgCache[i].encode());
+        data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
 
-      this.keyChain.sign(data, this.certificateName, function() {
-        try {
-          face.putData(data);
-        } catch (e) {
-          console.log(e.toString());
-        }
-      });
-      break;
+        this.keyChain.sign(data, this.certificateName, function() {
+          try {
+            face.putData(data);
+          } catch (e) {
+            console.log(e.toString());
+          }
+        });
+        break;
+      }
     }
   }
 };
