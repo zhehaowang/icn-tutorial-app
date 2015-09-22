@@ -230,7 +230,9 @@ function onChatData(from, time, msg, verified, name, session, seqNo) {
   $(para).addClass(additionalClass);
 
   var escaped_msg = $('<div/>').text(msg).html();
-  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
+  escaped_msg = escaped_msg.replace(/(ndn:\/[^ ]+)/g, "<a href=$1 target=\"_blank\">$1</a> (view in Firefox)");
+
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + escaped_msg;
   para.onDataTimestamp = time;
   appendElement(para);
 }
