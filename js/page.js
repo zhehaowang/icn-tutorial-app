@@ -118,9 +118,13 @@ $(document).ready(function(){
   })();
   
   if (navigator.sayswho.indexOf("Firefox") === -1) {
-    var browserSupportStr = "For the remote site, please use Firefox; <br>Please clone the repository at https://github.com/zhehaowang/icn-tutorial-app if you are using Chrome.";
+    var browserSupportStr = "For the remote site, please use Firefox; <br>Please clone the repository <a href=\"https://github.com/zhehaowang/icn-tutorial-app\">here</a> and run from local file system if you are using Chrome.";
     console.log(browserSupportStr);
-    $("#userInfo").html($("#userInfo").html() + "<br>" + browserSupportStr);
+    $("#userInfo").html($("#userInfo").html() + "<br><span class=\"browser-hint-message\">" + browserSupportStr + "</span>");
+  } else if (parseInt(navigator.sayswho.split(' ')[1]) < 38) {
+    var browserSupportStr = "Please use Firefox later than 37; Latest release if possible.";
+    console.log(browserSupportStr);
+    $("#userInfo").html($("#userInfo").html() + "<br><span class=\"browser-hint-message\">" + browserSupportStr + "</span>");
   }
 });
 
@@ -191,9 +195,9 @@ function sendMessageClick() {
   var chatMsg = $("#chatTextInput").val();
   if (chatMsg != "") {
     // Encode special html characters to avoid script injection.
-    var escaped_msg = $('<div/>').text(chatMsg).html();
+    var escapedMsg = escape(chatMsg);
 
-    chronoChat.send(escaped_msg);
+    chronoChat.send(escapedMsg);
     $("#chatTextInput").val("");
   }
   else
@@ -229,10 +233,12 @@ function onChatData(from, time, msg, verified, name, session, seqNo) {
   }
   $(para).addClass(additionalClass);
 
-  var escaped_msg = $('<div/>').text(msg).html();
-  escaped_msg = escaped_msg.replace(/(ndn:\/[^ ]+)/g, "<a href=$1 target=\"_blank\">$1</a> (view in Firefox with Addon)");
+  var unescapedMsg = unescape(msg);
+  
+  unescapedMsg = unescapedMsg.replace(/(ndn:\/[^ ]+)/g, "<a href=$1 target=\"_blank\">$1</a> (view in Firefox with Addon, <a href=\"https://github.com/named-data/ndn-js/raw/master/ndn-protocol.xpi\">download here</a>");
+  unescapedMsg = unescapedMsg.replace(/<script(\b[^>]*)>([\s\S]*?)<\/script>/gm, "&ltscript$1&gt$2&lt/script&gt");
 
-  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + escaped_msg;
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + unescapedMsg;
   para.onDataTimestamp = time;
   appendElement(para);
 }
@@ -265,7 +271,6 @@ function updateRoster(roster) {
   var objDiv = document.getElementById("rosterDisplayDiv");
   objDiv.innerHTML = "";
   for (var name in roster) {
-    // Note: this assumes application knowledge of structure of object Roster
     objDiv.innerHTML += '<li>' + roster[name].screenName + '</li>';
   }
   objDiv.innerHTML += '</ul>';
