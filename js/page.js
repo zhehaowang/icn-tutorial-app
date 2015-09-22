@@ -33,11 +33,7 @@ $(document).ready(function(){
     title: "Show Cert",
     autoOpen: false,
     open: function() {
-      if (chronoChat.hasOwnProperty("certBase64String") && chronoChat.certBase64String !== "") {
-        $("#certString").text(chronoChat.certBase64String);
-      } else {
-        $("#certString").text("Cert not ready yet");
-      }
+      $("#certString").text(chronoChat.getBase64CertString());
     }
   });
 
@@ -148,15 +144,16 @@ function startFireChat()
 
   $("#installCertBtn").click(function () {
     var signedCertString = $("#signedCertString").val();
-    var certificate = new IdentityCertificate();
-    certificate.wireDecode(new Buffer(signedCertString, "base64"));
-    chronoChat.keyChain.installIdentityCertificate(certificate, function () {
+    chronoChat.installIdentityCertificate(signedCertString, function () {
       console.log("Cert installation ready.");
       if (installCertDialog.dialog("isOpen")) {
         installCertDialog.dialog("close");
       }
     }, function (error) {
       console.log("Error in installIdentityCertificate: " + error);
+      if (installCertDialog.dialog("isOpen")) {
+        installCertDialog.dialog("close");
+      }
     });
   });
 

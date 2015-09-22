@@ -683,6 +683,24 @@ FireChat.prototype.messageCacheAppend = function(messageType, message)
   }, this.heartbeatInterval);
 };
 
+FireChat.prototype.installIdentityCertificate = function(signedCertString, onSuccess, onError) {
+  var certificate = new IdentityCertificate();
+  certificate.wireDecode(new Buffer(signedCertString, "base64"));
+  this.keyChain.installIdentityCertificate(certificate, function () {
+    onSuccess();
+  }, function (error) {
+    onError(error);
+  });
+};
+
+FireChat.prototype.getBase64CertString = function() {
+  if (this.hasOwnProperty("certBase64String") && this.certBase64String !== "") {
+    return chronoChat.certBase64String;
+  } else {
+    return "Cert not ready yet";
+  }
+}
+
 /**
  * Helper function
  */
