@@ -123,7 +123,7 @@ function startFireChat()
   chronoChat = new FireChat
     (screenName, username, chatroom, 
      onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified, 
-     true, false);
+     false, false);
 
   $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
   $("#chatroomNameLabel").html(chatroom);
@@ -277,10 +277,12 @@ function appendElement(para) {
   for (var i = 0; i < objDiv.children.length; i++) {
     if (para.onDataTimestamp < objDiv.children[i].onDataTimestamp) {
       objDiv.insertBefore(para, objDiv.children[i]);
+      document.getElementById("chatDisplayWrapper").scrollTop = document.getElementById("chatDisplayWrapper").scrollHeight;
       return;
     }
   }
   objDiv.appendChild(para);
+  document.getElementById("chatDisplayWrapper").scrollTop = document.getElementById("chatDisplayWrapper").scrollHeight;
 }
 
 function getRandomNameString(len)

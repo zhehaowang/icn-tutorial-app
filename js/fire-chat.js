@@ -218,11 +218,12 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
       }
 
       // NOTE: same face tries to register for the same prefix twice with different callbacks, if this is not put in an if/else
+      // TODO: register for chat messages as of now cert interest response is bugged.
       if (self.usePersistentStorage) {
-        self.chatStorage.registerPrefix(self.identityName, self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
+        self.chatStorage.registerPrefix(self.identityName.append("CHAT"), self.onRegisterFailed.bind(self), self.onPersistentDataNotFound.bind(self));
       } else {
         self.face.registerPrefix
-          (self.identityName, self.onInterest.bind(self),
+          (self.identityName.append("CHAT"), self.onInterest.bind(self),
            self.onRegisterFailed.bind(self));
       }
     }
@@ -247,23 +248,42 @@ ycI+hnkrfUD+KbHJLhWNqRA7TBJr";
 FireChat.prototype.onInterest = function
   (prefix, interest, face, interestFilterId, filter)
 {
-  var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
-  console.log("interest received: " + interest.getName().toUri());
+  // cert interest
+  if (interest.getName().size() == this.identityName.size() + 3) {
+    var self = this;
+    console.log("cert interest: " + interest.getName().toUri());
+    
+    var keyName = IdentityCertificate.certificateNameToPublicKeyName
+      (interest.getName());
+    
+    self.keyChain.identityManager.identityStorage.getDefaultCertificateNameForKeyPromise(keyName)
+    .then(function(defaultCertificateName) {
+      return self.keyChain.identityManager.identityStorage.getCertificatePromise
+        (defaultCertificateName, true);
+    })
+    .then(function(certificate) {
+      //self.face.putData(certificate);
+      console.log("About to send certificate: " + certificate.getName().toUri());
+    })
+  } else {
+    var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
+    console.log("chat interest: " + interest.getName().toUri());
 
-  for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
-    if (this.msgCache[i].seqNo == seqNo) {
-      var data = new Data(interest.getName());
-      data.setContent(this.msgCache[i].encode());
-      data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
+    for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
+      if (this.msgCache[i].seqNo == seqNo) {
+        var data = new Data(interest.getName());
+        data.setContent(this.msgCache[i].encode());
+        data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
 
-      this.keyChain.sign(data, this.certificateName, function() {
-        try {
-          face.putData(data);
-        } catch (e) {
-          console.log(e.toString());
-        }
-      });
-      break;
+        this.keyChain.sign(data, this.certificateName, function() {
+          try {
+            face.putData(data);
+          } catch (e) {
+            console.log(e.toString());
+          }
+        });
+        break;
+      }
     }
   }
 };
@@ -548,7 +568,8 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
   }
   if (verified === undefined || verified || !this.requireVerification) {
     if (userFullName in this.interestSeqDict) {
-      delete this.interestSeqDict[userFullName]; 
+      // Note: We leave the participant info in interestSeqDict so that we don't have participant left but jumping in/out in client
+      //delete this.interestSeqDict[userFullName]; 
     }
   }
 };
