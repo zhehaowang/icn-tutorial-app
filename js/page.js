@@ -103,6 +103,29 @@ $(document).ready(function(){
       });
     }
   });
+   
+  // User agent detection code from stackoverflow
+  navigator.sayswho = (function(){
+    var ua = navigator.userAgent, tem,
+    M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    if(/trident/i.test(M[1])){
+        tem =  /\brv[ :]+(\d+)/g.exec(ua) || [];
+        return 'IE '+(tem[1] || '');
+    }
+    if(M[1] === 'Chrome'){
+        tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+        if(tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+    }
+    M = M[2] ? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+    if((tem = ua.match(/version\/(\d+)/i)) != null) M.splice(1, 1, tem[1]);
+    return M.join(' ');
+  })();
+  
+  if (navigator.sayswho.indexOf("Firefox") === -1) {
+    var browserSupportStr = "For the remote site, please use Firefox; <br>Please clone the repository at https://github.com/zhehaowang/icn-tutorial-app if you are using Chrome.";
+    console.log(browserSupportStr);
+    $("#userInfo").html($("#userInfo").html() + "<br>" + browserSupportStr);
+  }
 });
 
 function startFireChat()
