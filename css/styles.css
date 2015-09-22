@@ -192,10 +192,11 @@ commenting and feed of comments
     font-weight: 600; 
 }
 
-
-
-
-
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2px;
+}
 
    
 @media screen and (max-width: 1030px) {

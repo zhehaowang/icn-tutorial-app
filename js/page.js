@@ -52,31 +52,21 @@ $(document).ready(function(){
   syncTreeDialog = $("#sync-tree-dialog").dialog({
     title: "Sync tree",
     autoOpen: false,
+    maxWidth: 600,
+    maxHeight: 500,
+    width: 600,
+    height: 500,
     buttons: {
       "OK": function () {
         $(this).dialog("close");
+      },
+      "refresh": function () {
+        updateSyncTree();
       }
     },
     open: function () {
       // TODO: This assumes knowledge of the library's data structure      
-      var digestTree = chronoChat.sync.digest_tree;
-      var rootDigest = digestTree.getRoot().substring(0, 6);
-      var syncTreeJson = {
-        "name": rootDigest,
-        "parent": "null",
-        "children": []
-      };
-
-      for (var i = 0; i < digestTree.digestnode.length; i++) {
-        syncTreeJson.children.push({
-          // TODO: Hardcoded for now, change later
-          "name": new Name(digestTree.digestnode[i].getDataPrefix()).get(4).toEscapedString() + "-"
-             + digestTree.digestnode[i].getSessionNo() + " : "
-             + digestTree.digestnode[i].getSequenceNo().toString(),
-          "parent": rootDigest
-        });
-      }
-      updateSyncTree(syncTreeJson);
+      updateSyncTree();
     }
   });
 
@@ -117,7 +107,7 @@ $(document).ready(function(){
 
 function startFireChat()
 {
-  var chatroom = "more";
+  var chatroom = "icn-tutorial";
   
   // Starts chat and join
   chronoChat = new FireChat
@@ -299,11 +289,29 @@ function getRandomNameString(len)
 /************************************************
  * D3 sync tree render function
  ************************************************/
-function updateSyncTree(source) {
+function updateSyncTree() {
+  var digestTree = chronoChat.sync.digest_tree;
+  var rootDigest = digestTree.getRoot().substring(0, 6);
+  var syncTreeJson = {
+    "name": rootDigest,
+    "parent": "null",
+    "children": []
+  };
+
+  for (var i = 0; i < digestTree.digestnode.length; i++) {
+    syncTreeJson.children.push({
+      // TODO: Hardcoded for now, change later
+      "name": new Name(digestTree.digestnode[i].getDataPrefix()).get(4).toEscapedString() + "-"
+         + digestTree.digestnode[i].getSessionNo() + " : "
+         + digestTree.digestnode[i].getSequenceNo().toString(),
+      "parent": rootDigest
+    });
+  }
+
   $("#sync-tree").html("");
 
-  var margin = {top: 20, right: 120, bottom: 20, left: 120},
-  width = 1280 - margin.right - margin.left,
+  var margin = {top: 20, right: 100, bottom: 20, left: 100},
+  width = 720 - margin.right - margin.left,
   height = 500 - margin.top - margin.bottom;
 
   var tree = d3.layout.tree()
@@ -321,7 +329,7 @@ function updateSyncTree(source) {
   var i = 0;
 
   // Compute the new tree layout.
-  var nodes = tree.nodes(source).reverse(),
+  var nodes = tree.nodes(syncTreeJson).reverse(),
     links = tree.links(nodes);
 
   // Normalize for fixed-depth.
