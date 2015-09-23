@@ -415,7 +415,9 @@ FireChat.prototype.onDataVerifyFailed = function(data)
  * OnData callback for prefix registration
  * @param {Interest}
  * @param {Data}
- * @param {Bool} updatePersistentStorage Set true or undefined if called by receiving data from face; false if called from persistentStorage traversal
+ * @param {Boolean} updatePersistentStorage Set true or undefined if called by receiving data from face (set to true if undefined); 
+ *   False if called from persistentStorage traversal.
+ *   This boolean is also used for checking if the data comes from persistentStorage in general.
  * @param {Number} onDataTimestamp The timestamp of data upon its reception
  */
 FireChat.prototype.onData = function(interest, data, updatePersistentStorage, onDataTimestamp)
@@ -443,17 +445,20 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
     }
     this.userLeave(username, session, onDataTimestamp, false);
   } else {
-    if (!(userFullName in this.roster)) {
-      this.userJoin(username, session, content.fromScreenName, onDataTimestamp, seqNo, false);
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
-    } else if (this.roster[userFullName].lastReceivedSeqNo < seqNo) {
-      this.roster[userFullName].lastReceivedSeqNo = seqNo;
-      // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
-      if (this.roster[userFullName].checkAliveEvent !== undefined) {
-        clearTimeout(this.roster[userFullName].checkAliveEvent);
+    // We add the user that sends the chat message to the roster, if the user does not exist before, and this message does not come from persistentStorage
+    if (updatePersistentStorage) {
+      if (!(userFullName in this.roster)) {
+        this.userJoin(username, session, content.fromScreenName, onDataTimestamp, seqNo, false);
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
+      } else if (this.roster[userFullName].lastReceivedSeqNo < seqNo) {
+        this.roster[userFullName].lastReceivedSeqNo = seqNo;
+        // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
+        if (this.roster[userFullName].checkAliveEvent !== undefined) {
+          clearTimeout(this.roster[userFullName].checkAliveEvent);
+        }
+        console.log("timeout scheduled for " + username + session + " at " + seqNo)
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
       }
-      console.log("timeout scheduled for " + username + session + " at " + seqNo)
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
     }
     // we don't schedule a checkAlive event, if chat data arrived out-of-order
   }
@@ -465,21 +470,33 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
   }
   
   try {
-    this.interestSeqDict[userFullName].seqs[seqNo] = -1;
-    for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
+    // TODO: should change this function for two different set of actions to distinguish 
+    //       data loaded from local persistent storage and data received from the network;
+    //       For data loaded from the storage, we may not have their records already, and 
+    //       may want to update their finishedSeq since they may still be in chat currently.
+    if (!updatePersistentStorage) {
       if (!(userFullName in this.interestSeqDict)) {
-        console.log("We did not have the interest expression record of " + userFullName + ", but got its data");
-        break;
+        this.interestSeqDict[userFullName] = {"finishedSeq": seqNo, "seqs": {}};
+      } else {
+        this.interestSeqDict[userFullName].finishedSeq = Math.max(this.interestSeqDict[userFullName].finishedSeq, seqNo);
       }
-      // We did not ask for this interest, mark this as done.
-      if (!(i in this.interestSeqDict[userFullName].seqs)) {
-        console.log("We did not have the interest expression record of " + userFullName + " " + i.toString() + ", but got its data");
-        this.interestSeqDict[userFullName].finishedSeq = Math.max(this.interestSeqDict[userFullName].finishedSeq, i);
-        continue;
-      }
-      if (this.interestSeqDict[userFullName].seqs[i] === -1) {
-        this.interestSeqDict[userFullName].finishedSeq = i;
-        delete this.interestSeqDict[userFullName].seqs[i];
+    } else {
+      this.interestSeqDict[userFullName].seqs[seqNo] = -1;
+      for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
+        if (!(userFullName in this.interestSeqDict)) {
+          console.log("We did not have the interest expression record of " + userFullName + ", but got its data");
+          break;
+        }
+        // We did not ask for this interest, mark this as done.
+        if (!(i in this.interestSeqDict[userFullName].seqs)) {
+          console.log("We did not have the interest expression record of " + userFullName + " " + i.toString() + ", but got its data");
+          this.interestSeqDict[userFullName].finishedSeq = Math.max(this.interestSeqDict[userFullName].finishedSeq, i);
+          continue;
+        }
+        if (this.interestSeqDict[userFullName].seqs[i] === -1) {
+          this.interestSeqDict[userFullName].finishedSeq = i;
+          delete this.interestSeqDict[userFullName].seqs[i];
+        }
       }
     }
   } catch (e) {
