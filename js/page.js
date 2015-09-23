@@ -136,7 +136,7 @@ function startFireChat()
   chronoChat = new FireChat
     (screenName, username, chatroom, 
      onChatData, onUserLeave, onUserJoin, updateRoster, onChatDataVerified, 
-     true, false);
+     false, false);
 
   $("#userInfo").html("Chatroom : " + chatroom + "<br> User: " + screenName + " (" + username + ")");
   $("#chatroomNameLabel").html(chatroom);
