@@ -147,12 +147,11 @@ html, body {
 commenting and feed of comments
  */
 
-
-
-
-
-#saysomethinggood {
- width:80%;       
+#input-message-area {
+  width:80%;    
+  border-style: solid;
+  border-width: 1px;
+  border-color: #CCBBCC;   
 }
 
 
@@ -198,6 +197,9 @@ commenting and feed of comments
   stroke-width: 2px;
 }
 
+.browser-hint-message {
+  color: #FF3300;
+}
    
 @media screen and (max-width: 1030px) {
  

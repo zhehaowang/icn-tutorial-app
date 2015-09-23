@@ -187,12 +187,17 @@ obxMUa2fWOg1RwFc5g==";
 
   this.msgCache = [];
   
+  // Defines the number of messages (including heartbeat) kept in local cache; also decides how many interests are asked for at most upon learning about new participant
   this.maxmsgCacheLength = 100;
+  this.maxRecordedParticipants = 1000;
+
   this.syncLifetime = 5000;
   this.chatInterestLifetime = 3000;
 
-  this.heartbeatInterval = 6000;
-  // NOTE: if the data takes longer than heartbeatInterval to arrive, a leave will be posted; this may not be ideal
+  
+  // False positive leave detected with 6 * 3 with 5 participants publishing chat and heartbeat, as too many recoverys are triggered between heartbeat updates
+  // Thus increased to 10 * 3
+  this.heartbeatInterval = 10000;
   this.checkAliveWaitPeriod = this.heartbeatInterval * 3;
   
   this.chatDataLifetime = 10000;
@@ -381,11 +386,22 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
     }
   }
   
+  // TODO: This may cause a visible lag in UI if too many things are asked for. 
+  //       We should set intervals for this, but need to handle the scheduled the events if we do.
+  //       Another problem is that the sequence of published chat messages are not preserved.
   for (var tempFullName in sendList) {
     if (!(tempFullName in this.interestSeqDict)) {
       this.interestSeqDict[tempFullName] = {"finishedSeq": 0, "seqs": {}};
     }
-    for (var i = this.interestSeqDict[tempFullName].finishedSeq + 1; i <= sendList[tempFullName].seqNo; i++) {
+    // do not ask for data that's behind the current sequence number by more than this.maxmsgCacheLength
+    var startSeq = 0;
+    if (sendList[tempFullName].seqNo - this.interestSeqDict[tempFullName].finishedSeq > this.maxmsgCacheLength) {
+      startSeq = sendList[tempFullName].seqNo - this.maxmsgCacheLength + 1;
+      this.interestSeqDict[tempFullName].finishedSeq = startSeq;
+    } else {
+      startSeq = this.interestSeqDict[tempFullName].finishedSeq + 1;
+    }
+    for (var i = startSeq; i <= sendList[tempFullName].seqNo; i++) {
       if (!(i in this.interestSeqDict[tempFullName].seqs)) {
         this.interestSeqDict[tempFullName].seqs[i] = 0;
 
@@ -396,18 +412,6 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
         console.log("Sent interest: " + interest.getName().toUri());
       }
     }
-    /*
-    if (!(tempFullName in this.interestSeqDict) || sendList[dataPrefix].seqNo > this.interestSeqDict[tempFullName]) {
-      var name = (new Name(dataPrefix)).append(sendList[dataPrefix].seqNo.toString());
-      var interest = new Interest(new Name(name));
-      interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
-      this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
-      this.interestSeqDict[tempFullName] = sendList[dataPrefix].seqNo;
-      console.log("Sent interest: " + name.toUri());
-    } else {
-      this.interestSeqDict[tempFullName] = sendList[dataPrefix].seqNo;
-    }
-    */
   }
 };
 
@@ -433,7 +437,9 @@ FireChat.prototype.onDataVerifyFailed = function(data)
  * OnData callback for prefix registration
  * @param {Interest}
  * @param {Data}
- * @param {Bool} updatePersistentStorage Set true or undefined if called by receiving data from face; false if called from persistentStorage traversal
+ * @param {Boolean} updatePersistentStorage Set true or undefined if called by receiving data from face (set to true if undefined); 
+ *   False if called from persistentStorage traversal.
+ *   This boolean is also used for checking if the data comes from persistentStorage in general.
  * @param {Number} onDataTimestamp The timestamp of data upon its reception
  */
 FireChat.prototype.onData = function(interest, data, updatePersistentStorage, onDataTimestamp)
@@ -461,16 +467,20 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
     }
     this.userLeave(username, session, onDataTimestamp, false);
   } else {
-    if (!(userFullName in this.roster)) {
-      this.userJoin(username, session, content.fromScreenName, onDataTimestamp, seqNo, false);
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
-    } else if (this.roster[userFullName].lastReceivedSeqNo < seqNo) {
-      this.roster[userFullName].lastReceivedSeqNo = seqNo;
-      // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
-      if (this.roster[userFullName].checkAliveEvent !== undefined) {
-        clearTimeout(this.roster[userFullName].checkAliveEvent);
+    // We add the user that sends the chat message to the roster, if the user does not exist before, and this message does not come from persistentStorage
+    if (updatePersistentStorage) {
+      if (!(userFullName in this.roster)) {
+        this.userJoin(username, session, content.fromScreenName, onDataTimestamp, seqNo, false);
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
+      } else if (this.roster[userFullName].lastReceivedSeqNo < seqNo) {
+        this.roster[userFullName].lastReceivedSeqNo = seqNo;
+        // New data is received from this user, so we can cancel the previously scheduled checkAlive check.
+        if (this.roster[userFullName].checkAliveEvent !== undefined) {
+          clearTimeout(this.roster[userFullName].checkAliveEvent);
+        }
+        console.log("timeout scheduled for " + username + session + " at " + seqNo)
+        this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
       }
-      this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
     }
     // we don't schedule a checkAlive event, if chat data arrived out-of-order
   }
@@ -482,11 +492,33 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
   }
   
   try {
-    this.interestSeqDict[userFullName].seqs[seqNo] = -1;
-    for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
-      if (this.interestSeqDict[userFullName].seqs[i] === -1) {
-        this.interestSeqDict[userFullName].finishedSeq = i;
-        delete this.interestSeqDict[userFullName].seqs[i];
+    // TODO: should change this function for two different set of actions to distinguish 
+    //       data loaded from local persistent storage and data received from the network;
+    //       For data loaded from the storage, we may not have their records already, and 
+    //       may want to update their finishedSeq since they may still be in chat currently.
+    if (!updatePersistentStorage) {
+      if (!(userFullName in this.interestSeqDict)) {
+        this.interestSeqDict[userFullName] = {"finishedSeq": seqNo, "seqs": {}};
+      } else {
+        this.interestSeqDict[userFullName].finishedSeq = Math.max(this.interestSeqDict[userFullName].finishedSeq, seqNo);
+      }
+    } else {
+      this.interestSeqDict[userFullName].seqs[seqNo] = -1;
+      for (var i = this.interestSeqDict[userFullName].finishedSeq + 1; i <= seqNo; i++) {
+        if (!(userFullName in this.interestSeqDict)) {
+          console.log("We did not have the interest expression record of " + userFullName + ", but got its data");
+          break;
+        }
+        // We did not ask for this interest, mark this as done.
+        if (!(i in this.interestSeqDict[userFullName].seqs)) {
+          console.log("We did not have the interest expression record of " + userFullName + " " + i.toString() + ", but got its data");
+          this.interestSeqDict[userFullName].finishedSeq = Math.max(this.interestSeqDict[userFullName].finishedSeq, i);
+          continue;
+        }
+        if (this.interestSeqDict[userFullName].seqs[i] === -1) {
+          this.interestSeqDict[userFullName].finishedSeq = i;
+          delete this.interestSeqDict[userFullName].seqs[i];
+        }
       }
     }
   } catch (e) {
@@ -590,7 +622,12 @@ FireChat.prototype.userLeave = function(username, session, time, verified)
   if (verified === undefined || verified || !this.requireVerification) {
     if (userFullName in this.interestSeqDict) {
       // Note: We leave the participant info in interestSeqDict so that we don't have participant left but jumping in/out in client
-      //delete this.interestSeqDict[userFullName]; 
+      
+      // We can't store this many participants
+      if (Object.keys(this.interestSeqDict).length > this.maxRecordedParticipants) {
+        console.log("TODO: interestSeqDict kept too many records, starting to remove participant");
+        delete this.interestSeqDict[userFullName];
+      }
     }
   }
 };
