@@ -6,7 +6,7 @@ Zhehao Wang <zhehao@remap.ucla.edu>
 
 ### Online trial
 
-Please try the app out at: http://memoria.ndn.ucla.edu/icn-tutorial/icn-torial-app (For now, please use **Firefox** only; tested with 40 and 41)
+Please try the app out at: http://memoria.ndn.ucla.edu/icn-tutorial/icn-tutorial-app (For now, please use **Firefox** only; tested with 40 and 41)
 
 Please request a certificate at: http://memoria.ndn.ucla.edu:5000 (For now, please ignore the instructions there, and follow the steps in this document)
 
