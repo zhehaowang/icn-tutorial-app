@@ -33,6 +33,7 @@ $(document).ready(function(){
     title: "Show Cert",
     autoOpen: false,
     open: function() {
+      console.log(chronoChat.getBase64CertString());
       $("#certString").text(chronoChat.getBase64CertString());
     }
   });

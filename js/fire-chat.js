@@ -531,7 +531,6 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
 
 /**
  * Timeout callback for chat data
- * TODO: re-express interest if data times out
  */
 FireChat.prototype.onTimeout = function(interest)
 {
@@ -656,6 +655,45 @@ FireChat.prototype.userJoin = function(username, session, screenName, time, seqN
 };
 
 /**
+ * Append a new ChatMessage to msgCache
+ * @param {String} messageType The type of this message
+ * @param {String} message The message to append
+ */
+FireChat.prototype.messageCacheAppend = function(messageType, message)
+{
+  var time = (new Date()).getTime();
+  this.sync.publishNextSequenceNo();
+  var content = new FireChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time);
+
+  this.msgCache.push(content);
+  
+  if (this.usePersistentStorage && messageType !== "HELLO") {
+    // Note: here memory content cache vs existing msgCache?
+    var data = new Data((new Name(this.chatPrefix)).append(this.sync.getSequenceNo().toString()));
+    data.setContent(content.encode());
+    data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
+    var self = this;
+    this.keyChain.sign(data, this.certificateName, function() {
+      self.chatStorage.add(data);
+    });
+  }
+  
+  if (this.heartbeatEvent !== undefined) {
+    clearTimeout(this.heartbeatEvent);
+  }
+
+  while (this.msgCache.length > this.maxmsgCacheLength) {
+    this.msgCache.shift();
+  }
+
+  var self = this;
+  this.heartbeatEvent = setTimeout(function () {
+    self.heartbeat();
+  }, this.heartbeatInterval);
+};
+
+
+/**
  * Intended public facing methods; 
  * Though join is now called in ChronoSync2013.onInitialized, thus called by FireChat's constructor instead; 
  */
@@ -698,43 +736,11 @@ FireChat.prototype.join = function()
 };
 
 /**
- * Append a new ChatMessage to msgCache
- * @param {String} messageType The type of this message
- * @param {String} message The message to append
+ * Library interface for installing ID cert
+ * @param {String} signedCertString The signed certificate string encoded in base64
+ * @param {Function} onSuccess() Success callback for id cert installed
+ * @param {Function} onError(error) Error callback
  */
-FireChat.prototype.messageCacheAppend = function(messageType, message)
-{
-  var time = (new Date()).getTime();
-  this.sync.publishNextSequenceNo();
-  var content = new FireChat.ChatMessage(this.sync.getSequenceNo(), this.username, this.screenName, messageType, message, time);
-
-  this.msgCache.push(content);
-  
-  if (this.usePersistentStorage && messageType !== "HELLO") {
-    // Note: here memory content cache vs existing msgCache?
-    var data = new Data((new Name(this.chatPrefix)).append(this.sync.getSequenceNo().toString()));
-    data.setContent(content.encode());
-    data.getMetaInfo().setFreshnessPeriod(this.chatDataLifetime);
-    var self = this;
-    this.keyChain.sign(data, this.certificateName, function() {
-      self.chatStorage.add(data);
-    });
-  }
-  
-  if (this.heartbeatEvent !== undefined) {
-    clearTimeout(this.heartbeatEvent);
-  }
-
-  while (this.msgCache.length > this.maxmsgCacheLength) {
-    this.msgCache.shift();
-  }
-
-  var self = this;
-  this.heartbeatEvent = setTimeout(function () {
-    self.heartbeat();
-  }, this.heartbeatInterval);
-};
-
 FireChat.prototype.installIdentityCertificate = function(signedCertString, onSuccess, onError) {
   var certificate = new IdentityCertificate();
   certificate.wireDecode(new Buffer(signedCertString, "base64"));
@@ -745,6 +751,10 @@ FireChat.prototype.installIdentityCertificate = function(signedCertString, onSuc
   });
 };
 
+/**
+ * Library interface for getting current ID cert
+ * @return {String} The (base64 encoded) default certificate of this instance's
+ */
 FireChat.prototype.getBase64CertString = function() {
   if (this.hasOwnProperty("certBase64String") && this.certBase64String !== "") {
     return chronoChat.certBase64String;
@@ -752,6 +762,7 @@ FireChat.prototype.getBase64CertString = function() {
     return "Cert not ready yet";
   }
 }
+
 
 /**
  * Helper function
@@ -766,6 +777,7 @@ FireChat.prototype.getRandomString = function(len)
   }
   return result;
 };
+
 
 /**
  * ChatMessage embedded class that encapsulates a chat message; handles encode/decode in JSON
