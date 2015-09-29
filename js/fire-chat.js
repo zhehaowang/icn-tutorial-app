@@ -261,6 +261,8 @@ obxMUa2fWOg1RwFc5g==";
   });
 
   this.heartbeatEvent = undefined;
+
+  this.fullLog = false;
 };
 
 /**
@@ -293,7 +295,9 @@ FireChat.prototype.onInterest = function
     })
   } else {
     var seqNo = parseInt(interest.getName().get(-1).toEscapedString());
-    console.log("chat interest: " + interest.getName().toUri());
+    if (this.fullLog) {
+      console.log("chat interest: " + interest.getName().toUri());
+    }
 
     for (var i = this.msgCache.length - 1 ; i >= 0; i--) {
       if (this.msgCache[i].seqNo == seqNo) {
@@ -409,7 +413,9 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
         interest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
         this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
 
-        console.log("Sent interest: " + interest.getName().toUri());
+        if (this.fullLog) {
+          console.log("Sent interest: " + interest.getName().toUri());
+        }
       }
     }
   }
@@ -417,7 +423,10 @@ FireChat.prototype.sendInterest = function(syncStates, isRecovery)
 
 FireChat.prototype.onDataVerified = function(data, updatePersistentStorage, content, name, session, seqNo)
 {
-  console.log("Data verified.");
+  if (this.fullLog) {
+    console.log("Data verified.");  
+  }
+  
   // Note: we store verified chat data into persistent storage only; old condition: (verified || !this.requireVerification)
   if (this.usePersistentStorage && updatePersistentStorage && this.chatStorage.get(data.getName().toUri()) === undefined && content.msgType !== "HELLO") {
     // Assuming that the same name in data packets always contain identitcal data packets
@@ -430,7 +439,9 @@ FireChat.prototype.onDataVerified = function(data, updatePersistentStorage, cont
 
 FireChat.prototype.onDataVerifyFailed = function(data)
 {
-  console.log("Data verify failed.");
+  if (this.fullLog) {
+    console.log("Data verify failed.");
+  }
 }
 
 /**
@@ -444,7 +455,10 @@ FireChat.prototype.onDataVerifyFailed = function(data)
  */
 FireChat.prototype.onData = function(interest, data, updatePersistentStorage, onDataTimestamp)
 {
-  console.log("Got data: " + data.getName().toUri());
+  if (this.fullLog) {
+    console.log("Got data: " + data.getName().toUri());
+  }
+  
   if (updatePersistentStorage === undefined) {
     updatePersistentStorage = true;
   }
@@ -478,7 +492,9 @@ FireChat.prototype.onData = function(interest, data, updatePersistentStorage, on
         if (this.roster[userFullName].checkAliveEvent !== undefined) {
           clearTimeout(this.roster[userFullName].checkAliveEvent);
         }
-        console.log("timeout scheduled for " + username + session + " at " + seqNo)
+        if (this.fullLog) {
+          console.log("timeout scheduled for " + username + session + " at " + seqNo);
+        }
         this.roster[userFullName].checkAliveEvent = setTimeout(this.checkAlive.bind(this, seqNo, username, session), this.checkAliveWaitPeriod);
       }
     }
