@@ -744,7 +744,9 @@ FireChat.prototype.join = function()
 FireChat.prototype.installIdentityCertificate = function(signedCertString, onSuccess, onError) {
   var certificate = new IdentityCertificate();
   certificate.wireDecode(new Buffer(signedCertString, "base64"));
+  var self = this;
   this.keyChain.installIdentityCertificate(certificate, function () {
+    self.certBase64String = signedCertString;
     onSuccess();
   }, function (error) {
     onError(error);

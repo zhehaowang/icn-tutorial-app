@@ -33,8 +33,18 @@ $(document).ready(function(){
     title: "Show Cert",
     autoOpen: false,
     open: function() {
-      console.log(chronoChat.getBase64CertString());
-      $("#certString").text(chronoChat.getBase64CertString());
+      var signedCertString = chronoChat.getBase64CertString();
+      $("#certString").text(signedCertString);
+      $("#certString").select();
+      // Display signer identity
+      try {
+        var certificate = new IdentityCertificate();
+        certificate.wireDecode(new Buffer(signedCertString, "base64"));
+        console.log(certificate.getSignature().getKeyLocator());
+        $("#signerIdentityParagraph").html("(KeyLocator KeyName): <br>" + certificate.getSignature().getKeyLocator().getKeyName().toUri());
+      } catch (e) {
+        console.log(e);
+      }
     }
   });
 
