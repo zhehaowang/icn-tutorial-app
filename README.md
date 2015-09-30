@@ -253,7 +253,7 @@ For example, /ndn/multicast/CHAT/CHANNEL/tutorial-chat/e6c18e9e14ab745af533c45f4
 
 Its payload is a Protobuf encoded sync tree.
 
-![How the sync tree looks](https://github.com/zhehaowang/icn-tutorial-app/tree/master/figures/sync-tree-screenshot.png)
+![How the sync tree looks](https://raw.githubusercontent.com/zhehaowang/icn-tutorial-app/master/figures/sync-tree-screenshot.png)
 
 **User**
 
