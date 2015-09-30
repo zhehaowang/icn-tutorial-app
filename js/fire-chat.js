@@ -209,7 +209,7 @@ obxMUa2fWOg1RwFc5g==";
     this.usePersistentStorage = false;
   }
   if (this.usePersistentStorage) {
-    this.chatStorage = new IndexedDbChatStorage("chatdb", this.face);
+    this.chatStorage = new IndexedDbChatStorage("icntutorial", this.face);
   }
 
   // UI callbacks
