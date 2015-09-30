@@ -1,8 +1,23 @@
-# icn-tutorial-app
+# ICN-tutorial-app
 
 Sync based chat/multimedia app with signing/verification for ICN tutorial.
 
-Zhehao Wang <zhehao@remap.ucla.edu>
+Author: Zhehao Wang <zhehao@remap.ucla.edu>
+
+With help from the ICN NDN tutorial team:
+Hila Ben Abraham (Washington University St. Louis); 
+Alex Afanasyev (UCLA);
+Jeff Burke (UCLA);
+Steve DiBenedetto (Colorado State University);
+Jeff Thompson (UCLA);
+Yingdi Yu (UCLA);
+Lixia Zhang (UCLA)); 
+
+Previous work by Qiuhan Ding <qiuhanding@cs.ucla.edu>, Wentao Shang <wentao@cs.ucla.edu>.
+
+[License](https://github.com/zhehaowang/icn-tutorial-app#license)
+
+[Tutorial link](http://conferences2.sigcomm.org/acm-icn/2015/tutorial-ndn.php)
 
 ### Online trial
 
