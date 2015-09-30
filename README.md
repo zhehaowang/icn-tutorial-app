@@ -251,7 +251,7 @@ The sync data name is /ndn/multicast/CHAT/CHANNEL/[chatroom]/[digest];
 
 For example, /ndn/multicast/CHAT/CHANNEL/tutorial-chat/e6c18e9e14ab745af533c45f404cc571fada9f6b76fbbe2616f70e2ad9727780.
 
-Its payload is a Protobuf encoded sync tree.
+Its payload is a Protobuf encoded sync tree, which may look like the figure below.
 
 ![How the sync tree looks](https://raw.githubusercontent.com/zhehaowang/icn-tutorial-app/master/figures/sync-tree-screenshot.png)
 
