@@ -159,13 +159,14 @@
 </div>
 
 <div id="show-cert-dialog">
-  Cert:
-  <p id="certString"></p>
+  <textarea id="certString" class="dialogTextareaClass" readonly></textarea><br>
+  <p id="signerIdentityParagraph">Signer Identity: </p>
 </div>
 
 <div id="install-cert-dialog">
-  Install cert:
-  <textarea id="signedCertString"></textarea>
+  Install cert:<br>
+  <textarea id="signedCertString" class="dialogTextareaClass"></textarea>
+  <br>
   <button id="installCertBtn">Install</button>
 </div>
 
