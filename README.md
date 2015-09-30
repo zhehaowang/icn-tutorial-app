@@ -149,7 +149,28 @@ function updateRoster(roster)
 function onChatDataVerified(name, session, seqNo)
 ```
 
-// TO ADD: getCert() return {String} base64 cert; and installIdentityCertificate(signedCert, onComplete, onError) @param {String} signedCert signed cert @param {Function} callback functions
+**getBase64CertString** method, returns any certificate with the identity name of this when called.
+
+```javascript
+/**
+ * Library interface for getting current ID cert
+ * @return {String} The (base64 encoded) default certificate of this instance's
+ */
+FireChat.prototype.getBase64CertString = function()
+
+```
+
+**installIdentityCertificate** method, installs the certificate (base64 string) into this browser's indexeddb based identity storage
+
+```javascript
+/**
+ * Library interface for installing ID cert
+ * @param {String} signedCertString The signed certificate string encoded in base64
+ * @param {Function} onSuccess() Success callback for id cert installed
+ * @param {Function} onError(error) Error callback
+ */
+FireChat.prototype.installIdentityCertificate = function(signedCertString, onSuccess, onError)
+```
 
 ##### Call logic from application code
 
@@ -163,8 +184,7 @@ In page.js (code is being updated)
      true, false);
   ...
   
-  // Get my current unsigned cert, and install signed certificate after getting authorized by root. (to be wrapped around in public API calls)
-  var unsignedCert = chronoChat.getCert();
+  var unsignedCert = chronoChat.getBase64CertString();
   ...
   chronoChat.installIdentityCertificate(signedCert, function () {
       console.log("Cert installation ready.");
