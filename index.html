@@ -1,21 +1,23 @@
 <!doctype html>
 <!--
-  Material Design Lite
-  Copyright 2015 Google Inc. All rights reserved.
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      https://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License
--->
-
+ * Copyright (C) 2014-2015 Regents of the University of California.
+ * @author: Dustin O'Hara <dustin.ohara@gmail.com>
+ * @author: Zhehao Wang <zhehao@remap.ucla.edu>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * A copy of the GNU Lesser General Public License is in the file COPYING.
+ -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -126,9 +128,9 @@
 <!-- Section for user to enter message -->        
 <div id = "enter-message">
   <p>
-  <div class="mdl-textfield mdl-js-textfield " id="saysomethinggood">
+  <div class="mdl-textfield mdl-js-textfield " id="input-message-area">
 	  <input class="mdl-textfield__input" type="text" id="chatTextInput" />
-	  <label class="mdl-textfield__label" for="sample1">Text...</label>
+	  <label class="mdl-textfield__label" for="sample1">Type a message here...</label>
 	</div>
   </p>
 
@@ -157,13 +159,14 @@
 </div>
 
 <div id="show-cert-dialog">
-  Cert:
-  <p id="certString"></p>
+  <textarea id="certString" class="dialogTextareaClass" readonly></textarea><br>
+  <p id="signerIdentityParagraph">Signer Identity: </p>
 </div>
 
 <div id="install-cert-dialog">
-  Install cert:
-  <textarea id="signedCertString"></textarea>
+  Install cert:<br>
+  <textarea id="signedCertString" class="dialogTextareaClass"></textarea>
+  <br>
   <button id="installCertBtn">Install</button>
 </div>
 
@@ -173,23 +176,8 @@
 </div>
 
 <!--
-  TODO (Signing/Verification): 
-  1. Put a modal dialogue to ask the user to put his email
-  2. Use name with that email as the default identity name, sign with that keychain
-  3. Put in Jeff's policy
-  4. Make sure root key's installed, correctly configure the PolicyManager
-  5. Test with a few certs I have from my cert site
-  6. Q: Trust for sync response, which should be handled in the library? The app should give the library its trust schema for sync responses?
--->
-
-<!--
-  TODO (Sync/Chat):
-  1. sendInterest logic probably should ask for everything that hasn't be asked for, according to given sequence numbers
-  2. onTimeout should re-express interest, max number of re-expressions?
-  3. Recovery scenario tests?
-  4. Q: How does a new participant know *all* the previous names of participants? Will they be in the same sync tree? (They should...but that tree may not be kept by anyone when a new participant joins? The network may cache this tree, but its data may go stale, etc, should we ask for stale data too?)
-  5. Each email has its one chat publishing prefix, or each email can pick whatever (nick)name to use? Looks like it shouldn't be whatever name, but a timestamped session component. 
-  6. Remind me of the session ID in chat messages, it's a different thing from what's in Chrono*Sync*2013's session(basically a part of the given sync name) now.
+  With indexedDBBasedStorage storage enabled, the new participant is likely to think non-existent participants
+  as in chat, until the 10 * 3 heartbeat times out; same problem without the indexedDbBasedStorage, too?
 -->
 
 <script src="js/material.min.js"></script>

@@ -33,10 +33,17 @@ $(document).ready(function(){
     title: "Show Cert",
     autoOpen: false,
     open: function() {
-      if (chronoChat.hasOwnProperty("certBase64String") && chronoChat.certBase64String !== "") {
-        $("#certString").text(chronoChat.certBase64String);
-      } else {
-        $("#certString").text("Cert not ready yet");
+      var signedCertString = chronoChat.getBase64CertString();
+      $("#certString").text(signedCertString);
+      $("#certString").select();
+      // Display signer identity
+      try {
+        var certificate = new IdentityCertificate();
+        certificate.wireDecode(new Buffer(signedCertString, "base64"));
+        console.log(certificate.getSignature().getKeyLocator());
+        $("#signerIdentityParagraph").html("(KeyLocator KeyName): <br>" + certificate.getSignature().getKeyLocator().getKeyName().toUri());
+      } catch (e) {
+        console.log(e);
       }
     }
   });
@@ -52,31 +59,21 @@ $(document).ready(function(){
   syncTreeDialog = $("#sync-tree-dialog").dialog({
     title: "Sync tree",
     autoOpen: false,
+    maxWidth: 600,
+    maxHeight: 500,
+    width: 600,
+    height: 500,
     buttons: {
       "OK": function () {
         $(this).dialog("close");
+      },
+      "refresh": function () {
+        updateSyncTree();
       }
     },
     open: function () {
       // TODO: This assumes knowledge of the library's data structure      
-      var digestTree = chronoChat.sync.digest_tree;
-      var rootDigest = digestTree.getRoot().substring(0, 6);
-      var syncTreeJson = {
-        "name": rootDigest,
-        "parent": "null",
-        "children": []
-      };
-
-      for (var i = 0; i < digestTree.digestnode.length; i++) {
-        syncTreeJson.children.push({
-          // TODO: Hardcoded for now, change later
-          "name": new Name(digestTree.digestnode[i].getDataPrefix()).get(4).toEscapedString() + "-"
-             + digestTree.digestnode[i].getSessionNo() + " : "
-             + digestTree.digestnode[i].getSequenceNo().toString(),
-          "parent": rootDigest
-        });
-      }
-      updateSyncTree(syncTreeJson);
+      updateSyncTree();
     }
   });
 
@@ -113,11 +110,38 @@ $(document).ready(function(){
       });
     }
   });
+   
+  // User agent detection code from stackoverflow
+  navigator.sayswho = (function(){
+    var ua = navigator.userAgent, tem,
+    M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    if(/trident/i.test(M[1])){
+        tem =  /\brv[ :]+(\d+)/g.exec(ua) || [];
+        return 'IE '+(tem[1] || '');
+    }
+    if(M[1] === 'Chrome'){
+        tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+        if(tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+    }
+    M = M[2] ? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+    if((tem = ua.match(/version\/(\d+)/i)) != null) M.splice(1, 1, tem[1]);
+    return M.join(' ');
+  })();
+  
+  if (navigator.sayswho.indexOf("Firefox") === -1) {
+    var browserSupportStr = "For the remote site, please use Firefox; <br>Please clone the repository <a href=\"https://github.com/zhehaowang/icn-tutorial-app\">here</a> and run from local file system if you are using Chrome.";
+    console.log(browserSupportStr);
+    $("#userInfo").html($("#userInfo").html() + "<br><span class=\"browser-hint-message\">" + browserSupportStr + "</span>");
+  } else if (parseInt(navigator.sayswho.split(' ')[1]) < 38) {
+    var browserSupportStr = "Please use Firefox later than 37; Latest release if possible.";
+    console.log(browserSupportStr);
+    $("#userInfo").html($("#userInfo").html() + "<br><span class=\"browser-hint-message\">" + browserSupportStr + "</span>");
+  }
 });
 
 function startFireChat()
 {
-  var chatroom = "more";
+  var chatroom = "icn-tutorial";
   
   // Starts chat and join
   chronoChat = new FireChat
@@ -135,15 +159,16 @@ function startFireChat()
 
   $("#installCertBtn").click(function () {
     var signedCertString = $("#signedCertString").val();
-    var certificate = new IdentityCertificate();
-    certificate.wireDecode(new Buffer(signedCertString, "base64"));
-    chronoChat.keyChain.installIdentityCertificate(certificate, function () {
+    chronoChat.installIdentityCertificate(signedCertString, function () {
       console.log("Cert installation ready.");
       if (installCertDialog.dialog("isOpen")) {
         installCertDialog.dialog("close");
       }
     }, function (error) {
       console.log("Error in installIdentityCertificate: " + error);
+      if (installCertDialog.dialog("isOpen")) {
+        installCertDialog.dialog("close");
+      }
     });
   });
 
@@ -181,9 +206,9 @@ function sendMessageClick() {
   var chatMsg = $("#chatTextInput").val();
   if (chatMsg != "") {
     // Encode special html characters to avoid script injection.
-    var escaped_msg = $('<div/>').text(chatMsg).html();
+    var escapedMsg = escape(chatMsg);
 
-    chronoChat.send(escaped_msg);
+    chronoChat.send(escapedMsg);
     $("#chatTextInput").val("");
   }
   else
@@ -219,8 +244,12 @@ function onChatData(from, time, msg, verified, name, session, seqNo) {
   }
   $(para).addClass(additionalClass);
 
-  var escaped_msg = $('<div/>').text(msg).html();
-  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + msg;
+  var unescapedMsg = unescape(msg);
+  
+  unescapedMsg = unescapedMsg.replace(/(ndn:\/[^ ]+)/g, "<a href=$1 target=\"_blank\">$1</a> (view in Firefox with Addon, <a href=\"https://github.com/named-data/ndn-js/raw/master/ndn-protocol.xpi\">download here</a>");
+  unescapedMsg = unescapedMsg.replace(/<script(\b[^>]*)>([\s\S]*?)<\/script>/gm, "&ltscript$1&gt$2&lt/script&gt");
+
+  para.innerHTML = '<span>' + from + '-' + (new Date(time)).toLocaleTimeString() + ':</span><br> ' + unescapedMsg;
   para.onDataTimestamp = time;
   appendElement(para);
 }
@@ -253,7 +282,6 @@ function updateRoster(roster) {
   var objDiv = document.getElementById("rosterDisplayDiv");
   objDiv.innerHTML = "";
   for (var name in roster) {
-    // Note: this assumes application knowledge of structure of object Roster
     objDiv.innerHTML += '<li>' + roster[name].screenName + '</li>';
   }
   objDiv.innerHTML += '</ul>';
@@ -299,11 +327,29 @@ function getRandomNameString(len)
 /************************************************
  * D3 sync tree render function
  ************************************************/
-function updateSyncTree(source) {
+function updateSyncTree() {
+  var digestTree = chronoChat.sync.digest_tree;
+  var rootDigest = digestTree.getRoot().substring(0, 6);
+  var syncTreeJson = {
+    "name": rootDigest,
+    "parent": "null",
+    "children": []
+  };
+
+  for (var i = 0; i < digestTree.digestnode.length; i++) {
+    syncTreeJson.children.push({
+      // TODO: Hardcoded for now, change later
+      "name": new Name(digestTree.digestnode[i].getDataPrefix()).get(4).toEscapedString() + "-"
+         + digestTree.digestnode[i].getSessionNo() + " : "
+         + digestTree.digestnode[i].getSequenceNo().toString(),
+      "parent": rootDigest
+    });
+  }
+
   $("#sync-tree").html("");
 
-  var margin = {top: 20, right: 120, bottom: 20, left: 120},
-  width = 1280 - margin.right - margin.left,
+  var margin = {top: 20, right: 100, bottom: 20, left: 100},
+  width = 720 - margin.right - margin.left,
   height = 500 - margin.top - margin.bottom;
 
   var tree = d3.layout.tree()
@@ -321,7 +367,7 @@ function updateSyncTree(source) {
   var i = 0;
 
   // Compute the new tree layout.
-  var nodes = tree.nodes(source).reverse(),
+  var nodes = tree.nodes(syncTreeJson).reverse(),
     links = tree.links(nodes);
 
   // Normalize for fixed-depth.
