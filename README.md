@@ -21,11 +21,11 @@ Previous work by Qiuhan Ding <qiuhanding@cs.ucla.edu>, Wentao Shang <wentao@cs.u
 
 ### Online trial
 
-Please try the app out at: http://memoria.ndn.ucla.edu/icn-tutorial/icn-tutorial-app (For now, please use **Firefox** only; tested with 40 and 41)
+Please try the app out at: http://memoria.ndn.ucla.edu/icn-tutorial/icn-tutorial-app (For now, please use **Firefox** > 40)
 
-Please request a certificate at: http://memoria.ndn.ucla.edu:5000 (For now, please ignore the instructions there, and follow the steps in this document)
+Please request a certificate at: http://memoria.ndn.ucla.edu:5000, and follow the instructions there, or the instructions below.
 
-_You can use the online demo without getting certified, but the messages will be marked in a different color, and it will take much longer for the messages to get displayed. (Other participant keeps trying to verify)_
+_You can use the online demo without getting certified, but the messages will be marked in a different (grey) color._
 
 ### How to use
 
@@ -37,7 +37,7 @@ _You can use the online demo without getting certified, but the messages will be
     * Copy the base64 string from the prompted dialog and paste it to the certificate field in the above-opened link
     * Make sure you've put in username and certificate, then submit
     * The cert should be automatically issued and emailed to your email account; it's up to you to install it in browser (by clicking the "install signed cert" button, the dialog would close automatically upon successful installation), or let the cert server keep and serve your signed cert.
-3. Chat (for now plain text only)
+3. Chat (html tags, except script tags are supported)
 
 For now, an indexeddb based local historical chat storage is enabled by default; _Your_ past chat history (using the same email) could be served by the storage.
 
