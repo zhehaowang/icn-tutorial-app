@@ -29,7 +29,7 @@ _You can use the online demo without getting certified, but the messages will be
 
 ### How to use
 
-1. Provide an email and nickname, and join the default channel; (Random string or nickname will be generated if left empty)
+1. Provide an email and nickname, and join the default channel; (Random username or nickname will be generated if left empty)
 2. Get certified (similar as ndncert): 
     * Open <a href="http://memoria.ndn.ucla.edu:5000" target="_blank">this link</a> and submit your email
     * Check your email for a link with token from testname.zhehao@gmail.com, open that link
