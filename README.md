@@ -37,7 +37,7 @@ _You can use the online demo without getting certified, but the messages will be
     * Copy the base64 string from the prompted dialog and paste it to the certificate field in the above-opened link
     * Make sure you've put in username and certificate, then submit
     * The cert should be automatically issued and emailed to your email account; it's up to you to install it in browser (by clicking the "install signed cert" button, the dialog would close automatically upon successful installation), or let the cert server keep and serve your signed cert.
-3. Chat (html tags, except script tags are supported)
+3. Chat (html tags, except script tags are supported); ndn tags, ndn:/... is also supported with the ndn-js Firefox addon; an example would be showing contents served by ndnfs on memoria.
 
 For now, an indexeddb based local historical chat storage is enabled by default; _Your_ past chat history (using the same email) could be served by the storage.
 
@@ -322,16 +322,6 @@ For now, unverified sync data will trigger onReceivedSyncState callback, thus th
 [ChronoSync paper](http://irl.cs.ucla.edu/~zhenkai/papers/chronosync.pdf)
 
 Leave mechanism: user produces a heartbeat (message type "HELLO") every 6s, if in a user in your roster does not update its sequence number in 18s, that user will be considered as left the chatroom.
-
-### Known Issues
-
-Currently working on:
-* Interest re-expression onTimeout, believed to cause multiple join/leaves without actual user behavior
-* Display unverified messages with less delay?
-* Caching leave messages when user not leaving gracefully?
-* Support for later versions of Chrome, which requires a secure source (or https deployment); createIdentityCertificate likely throws this exception, investigating
-* Feature support, for example multimedia
-* UI improvements
 
 ### License
 
