@@ -565,7 +565,11 @@ FireChat.prototype.onTimeout = function(interest)
   
   try {
     if (this.interestSeqDict[userFullName].seqs[seqNo] < this.maxNumOfRetransmission) {
-      this.face.expressInterest(interest, this.onData.bind(this), this.onTimeout.bind(this));
+      var newInterest = new Interest(interest.getName());
+      newInterest.setInterestLifetimeMilliseconds(this.chatInterestLifetime);
+      newInterest.setMustBeFresh(true);
+
+      this.face.expressInterest(newInterest, this.onData.bind(this), this.onTimeout.bind(this));
       this.interestSeqDict[userFullName].seqs[seqNo] ++;
     } else {
       // We don't ask for this piece of data any more because of too many timeouts; we treat this piece of data as if received.
